@@ -4,4 +4,99 @@ version: "3.8"
 services:
 # postgres details
   postgres:
-    image:
+    image: postgres:16-alpine
+    container_name: carezo-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-carezo_user}
+      POSTGRESS_PASSWORD: ${DB_PASSWORD:- }
+      POSTGRES_DB : ${DB_NAME:-carezo_db}
+    ports:
+      - "5432:5432"
+    volumes: 
+      - postgres_data:/var/lib/postgresql/postgres_data
+      - ./migrations:/docker-entrypoint-initdb.details
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-carezo_user} -d ${DB_NAME:-carezo_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - carezo-network
+    restart: unless-stopped
+
+
+# Redis cache
+  redis:
+    image: redis:7-alpine
+    container_name: carezo_redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:- }
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - carezo-network
+    restart: unless-stopped
+
+
+  app:
+    build:
+      context:
+      dockerfile: dockerfile
+    container_name: carezo_app
+    ports: 
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis: 
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+      - .:/app
+    networks:
+      - carezo_network
+    restart: unless-stopped
+    command: air
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: carezo_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@carezo.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - driveease-network
+    restart: unless-stopped
+    profiles:
+      - tools # Only start when explicitly requested
+
+  network: 
+    carezo-networks:
+      driver: bridge
+
+  volumes: 
+    postgres_data:
+    redis_data:
+    pgadmin_data:
+
+
+
+
+
+
+
+
+
+
