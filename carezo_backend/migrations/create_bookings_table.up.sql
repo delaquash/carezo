@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
+);
 
     -- Indexes
     CREATE INDEX idx_bookings_user ON bookings(user_id);
@@ -66,5 +66,4 @@ CREATE TABLE IF NOT EXISTS bookings (
     -- Check constraint: return date must be after pickup date
     ALTER TABLE bookings ADD CONSTRAINT check_return_after_pickup 
     CHECK (return_date > pickup_date);
-    
-)
+
