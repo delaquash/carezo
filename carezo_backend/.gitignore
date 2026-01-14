@@ -1,5 +1,6 @@
 .env.example
-
+.env
+# docker-compose up -d postgres redis
 # Binaries
 *.exe
 *.exe~
