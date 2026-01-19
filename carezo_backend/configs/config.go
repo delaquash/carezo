@@ -1,8 +1,7 @@
 package configs
 
-
 import (
-	"logs"
+	"log"
 	"os"
 	"strconv"
 	"time"
@@ -26,16 +25,13 @@ type Config struct {
 	AppPort	string
 	AppName	string
 
-	 JWT (JSON Web Token) settings for authentication
 	JWTSecret              string
 	JWTExpirationHours     int
 	RefreshTokenExpiration time.Duration
 
-	// OTP (One-Time Password) settings
 	OTPExpirationMinutes int
 	OTPLength            int
 
-	// Email settings (for sending OTP via email)
 	SMTPHost     string
 	SMTPPort     string
 	SMTPUser     string
@@ -43,26 +39,47 @@ type Config struct {
 	FromEmail    string
 	FromName     string
 
-	// Twilio settings (for sending OTP via SMS)
 	TwilioAccountSID  string
 	TwilioAuthToken   string
 	TwilioPhoneNumber string
 
-	// Google OAuth settings
 	GoogleClientID     string
 	GoogleClientSecret string
 	GoogleRedirectURL  string
 
-	// Paystack settings (for payment processing)
 	PaystackSecretKey string
 	PaystackPublicKey string
 
-	// Rate limiting settings
+
 	RateLimitRequests       int
 	RateLimitWindowSeconds  int
 
-	// File upload settings
+
 	MaxUploadSizeMB    int
 	UploadPath         string
 	AllowedImageTypes  string
+}
+
+
+func LoadConfig() *Config {
+	if err := godotenv.Load(); err != nil {
+		log.Println("Warning: .env file not found, using environment variable")
+	}
+	// helper to get env variable with original value and return default if not exist
+	getEnv := func (key, defaultValue string) string {
+		if value := os.Getenv(key); value != "" {
+			return value
+		}
+		return defaultValue
+	}
+
+	// convert string env to int
+	getEnvAsInt := func(key string, defaultValue int) int {
+		if value := os.Getenv(key); value !+ "" {
+			if intVal, err := strconv.Atoi(value); err == nil {
+				return intVal
+			}
+		}
+
+		return defaultValue	
 }
