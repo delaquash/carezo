@@ -3,10 +3,8 @@ package database
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
-	"github.com/delaquash/carezo/carezo_backends/configs"
 	"github.com/delaquash/carezo/configs"
 	"github.com/redis/go-redis/v9"
 )
