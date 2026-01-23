@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"go/token"
 	"net/http"
 	"strings"
 
@@ -45,6 +44,28 @@ func AuthMiddleware(cfg *configs.Config) gin.HandlerFunc {
 
 
 		// continue to next handler
+		c.Next()
+	}
+}
+
+
+// function to check if user has required role(admin, user etc)
+func RequireRole(role string) gin.HandlerFunc {
+	return func (c *gin.Context) {
+		userRole, exists := c.Get("user_role")
+		if !exists {
+			response.Error(c, http.StatusUnauthorized, "Unauthorized")
+			c.Abort()
+			return
+		}
+
+		// Check if user has a required role
+		if userRole != role {
+			response.Error(
+				c,
+				http.StatusForbidden, "Permission denied")
+				return
+		}
 		c.Next()
 	}
 }
