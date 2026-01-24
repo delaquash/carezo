@@ -6,15 +6,15 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/delaquash/carezo/configs"
 	"github.com/delaquash/carezo/internal/database"
 	"github.com/delaquash/carezo/internal/model"
 	"github.com/delaquash/carezo/internal/utils"
-	"github.com/google/uuid"
 )
+
 
 type AuthService struct {
 	cfg          *configs.Config
@@ -30,21 +30,21 @@ func NewAuthService(cfg *configs.Config) *AuthService {
 	}
 }
 
-// Register creates a new user account and sends OTP
-// Step 1 of registration process
-func (s *AuthService) Register(req *model.RegisterRequest) error {
+// Register creates a new user account and sends OTP via email
+// SIMPLIFIED: Email-only, no SMS
+func (s *AuthService) Register(req *models.RegisterRequest) error {
 	// 1. Check if user already exists
 	var exists bool
-	query := `SELECT EXISTS(SELECT 1 FROM users WHERE phone_number = $1 OR email = $2)`
-	err := database.DB.Get(&exists, query, req.PhoneNumber, req.Email)
+	query := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND deleted_at IS NULL)`
+	err := database.DB.Get(&exists, query, req.Email)
 	if err != nil {
 		return fmt.Errorf("database error: %w", err)
 	}
 	if exists {
-		return errors.New("user with this phone number or email already exists")
+		return errors.New("user with this email already exists")
 	}
 
-	// 2. Hash password (NEVER store plain text passwords!)
+	// 2. Hash password
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
 		return err
@@ -53,117 +53,115 @@ func (s *AuthService) Register(req *model.RegisterRequest) error {
 	// 3. Create user in database (incomplete profile, pending verification)
 	userID := uuid.New().String()
 	query = `
-		INSERT INTO users (id, phone_number, email, password_hash, oauth_provider, status, role)
-		VALUES ($1, $2, $3, $4, 'local', 'active', 'user')
+		INSERT INTO users (id, email, password_hash, oauth_provider, status, role, email_verified)
+		VALUES ($1, $2, $3, 'local', 'active', 'user', false)
 	`
-	_, err = database.DB.Exec(query, userID, req.PhoneNumber, req.Email, hashedPassword)
+	_, err = database.DB.Exec(query, userID, req.Email, hashedPassword)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 
-	// 4. Generate and send OTP to phone
-	otp, err := s.otpService.GenerateAndStoreOTP(req.PhoneNumber)
+	// 4. Generate and store OTP
+	otp, err := s.otpService.GenerateAndStoreOTP(req.Email)
 	if err != nil {
 		return err
 	}
 
-	// 5. Send OTP via SMS (Twilio) - In development, just log it
-	fmt.Printf("📱 OTP for %s: %s\n", req.PhoneNumber, otp)
-	// In production: use Twilio API to send SMS
-
-	// 6. Also send OTP via email as backup
+	// 5. Send OTP via email
 	err = s.emailService.SendOTPEmail(req.Email, otp)
 	if err != nil {
-		// Log error but don't fail the registration
+		// Log error but don't fail registration
 		fmt.Printf("Warning: Failed to send OTP email: %v\n", err)
+		return fmt.Errorf("failed to send verification email: %w", err)
 	}
 
+	fmt.Printf("📧 OTP sent to %s: %s\n", req.Email, otp) // For development
 	return nil
 }
 
-// VerifyOTP verifies the OTP code sent to user's phone
-// Step 2 of registration process
-func (s *AuthService) VerifyOTP(req *model.VerifyOTPRequest) error {
+// VerifyOTP verifies the OTP code sent to user's email
+func (s *AuthService) VerifyOTP(req *models.VerifyOTPRequest) error {
 	// 1. Verify OTP from Redis
-	valid, err := s.otpService.VerifyOTP(req.PhoneNumber, req.OTP)
+	valid, err := s.otpService.VerifyOTP(req.Email, req.OTP)
 	if err != nil || !valid {
 		return errors.New("invalid or expired OTP")
 	}
 
-	// 2. Mark phone as verified in database
-	query := `UPDATE users SET phone_verified = true WHERE phone_number = $1`
-	_, err = database.DB.Exec(query, req.PhoneNumber)
+	// 2. Mark email as verified in database
+	query := `UPDATE users SET email_verified = true WHERE email = $1 AND deleted_at IS NULL`
+	result, err := database.DB.Exec(query, req.Email)
 	if err != nil {
-		return fmt.Errorf("failed to verify phone: %w", err)
+		return fmt.Errorf("failed to verify email: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return errors.New("user not found")
 	}
 
 	return nil
 }
 
 // CompleteProfile completes user registration after OTP verification
-// Step 3 (final) of registration process
-func (s *AuthService) CompleteProfile(phoneNumber string, req *model.CompleteProfileRequest) error {
+func (s *AuthService) CompleteProfile(email string, req *models.CompleteProfileRequest) error {
 	// Update user profile with complete information
 	query := `
 		UPDATE users 
-		SET first_name = $1, last_name = $2, age = $3, profession = $4, location = $5
-		WHERE phone_number = $6 AND phone_verified = true
+		SET first_name = $1, last_name = $2, phone_number = $3, age = $4, profession = $5, location = $6
+		WHERE email = $7 AND email_verified = true AND deleted_at IS NULL
 	`
 	result, err := database.DB.Exec(
 		query,
 		req.FirstName,
 		req.LastName,
+		req.PhoneNumber, // Now optional
 		req.Age,
 		req.Profession,
 		req.Location,
-		phoneNumber,
+		email,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update profile: %w", err)
 	}
 
-	// Check if any rows were affected
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return errors.New("user not found or phone not verified")
+		return errors.New("user not found or email not verified")
 	}
 
 	return nil
 }
 
-// Login authenticates user with email/phone and password
-func (s *AuthService) Login(req *model.LoginRequest) (*model.AuthResponse, error) {
-	// 1. Find user by email or phone number
-	var user model.User
-	
-	// Check if identifier is email or phone (simple check: contains @)
-	var query string
-	if strings.Contains(req.Identifier, "@") {
-		query = `SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL`
-	} else {
-		query = `SELECT * FROM users WHERE phone_number = $1 AND deleted_at IS NULL`
-	}
-
-	err := database.DB.Get(&user, query, req.Identifier)
+// Login authenticates user with email and password
+func (s *AuthService) Login(req *models.LoginRequest) (*models.AuthResponse, error) {
+	// 1. Find user by email
+	var user models.User
+	query := `SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL`
+	err := database.DB.Get(&user, query, req.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.New("invalid credentials")
+			return nil, errors.New("invalid email or password")
 		}
 		return nil, fmt.Errorf("database error: %w", err)
 	}
 
-	// 2. Verify password
-	err = utils.VerifyPassword(user.PasswordHash, req.Password)
-	if err != nil {
-		return nil, errors.New("invalid credentials")
+	// 2. Check if email is verified
+	if !user.EmailVerified {
+		return nil, errors.New("please verify your email before logging in")
 	}
 
-	// 3. Check if account is active
+	// 3. Verify password
+	err = utils.VerifyPassword(user.PasswordHash, req.Password)
+	if err != nil {
+		return nil, errors.New("invalid email or password")
+	}
+
+	// 4. Check if account is active
 	if user.Status != "active" {
 		return nil, errors.New("account is suspended or inactive")
 	}
 
-	// 4. Generate JWT tokens
+	// 5. Generate JWT tokens
 	accessToken, err := utils.GenerateAccessToken(user.ID, user.Email, user.Role, s.cfg)
 	if err != nil {
 		return nil, err
@@ -174,12 +172,12 @@ func (s *AuthService) Login(req *model.LoginRequest) (*model.AuthResponse, error
 		return nil, err
 	}
 
-	// 5. Update last login time
+	// 6. Update last login time
 	query = `UPDATE users SET last_login_at = $1 WHERE id = $2`
 	database.DB.Exec(query, time.Now(), user.ID)
 
-	// 6. Return auth response
-	return &model.AuthResponse{
+	// 7. Return auth response
+	return &models.AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		User:         &user,
@@ -187,18 +185,17 @@ func (s *AuthService) Login(req *model.LoginRequest) (*model.AuthResponse, error
 }
 
 // ForgotPassword initiates password reset process
-func (s *AuthService) ForgotPassword(req *model.ForgotPasswordRequest) error {
+func (s *AuthService) ForgotPassword(req *models.ForgotPasswordRequest) error {
 	// 1. Find user by email
-	var user model.User
+	var user models.User
 	query := `SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL`
 	err := database.DB.Get(&user, query, req.Email)
 	if err != nil {
-		// Don't reveal if email exists or not (security best practice)
-		// Always return success to prevent email enumeration
+		// Don't reveal if email exists (security best practice)
 		return nil
 	}
 
-	// 2. Generate reset token (random secure string)
+	// 2. Generate reset token
 	resetToken, err := generateSecureToken(32)
 	if err != nil {
 		return err
@@ -222,9 +219,9 @@ func (s *AuthService) ForgotPassword(req *model.ForgotPasswordRequest) error {
 }
 
 // ResetPassword resets user password using reset token
-func (s *AuthService) ResetPassword(req *model.ResetPasswordRequest) error {
+func (s *AuthService) ResetPassword(req *models.ResetPasswordRequest) error {
 	// 1. Find user with valid reset token
-	var user model.User
+	var user models.User
 	query := `
 		SELECT * FROM users 
 		WHERE reset_token = $1 
@@ -259,7 +256,6 @@ func (s *AuthService) ResetPassword(req *model.ResetPasswordRequest) error {
 	return nil
 }
 
-// generateSecureToken creates a cryptographically secure random token
 func generateSecureToken(length int) (string, error) {
 	bytes := make([]byte, length)
 	if _, err := rand.Read(bytes); err != nil {

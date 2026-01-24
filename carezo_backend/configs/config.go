@@ -10,28 +10,33 @@ import (
 )
 
 type Config struct {
-	DBHost 		string
-	DBPort 		string
-	DBUser 		string
-	DBPassword 	string
-	DBName		string
+	// Database settings
+	DBHost     string
+	DBPort     string
+	DBUser     string
+	DBPassword string
+	DBName     string
 
-	// Redis Setting
-	RedisHost 	  string
-	RedisPort 	  string
+	// Redis settings
+	RedisHost     string
+	RedisPort     string
 	RedisPassword string
 
-	AppEnv 	string
-	AppPort	string
-	AppName	string
+	// Application settings
+	AppEnv  string
+	AppPort string
+	AppName string
 
+	// JWT settings
 	JWTSecret              string
 	JWTExpirationHours     int
 	RefreshTokenExpiration time.Duration
 
+	// OTP settings (email-only now)
 	OTPExpirationMinutes int
 	OTPLength            int
 
+	// Email settings (Gmail SMTP)
 	SMTPHost     string
 	SMTPPort     string
 	SMTPUser     string
@@ -39,58 +44,53 @@ type Config struct {
 	FromEmail    string
 	FromName     string
 
-	TwilioAccountSID  string
-	TwilioAuthToken   string
-	TwilioPhoneNumber string
-
+	// Google OAuth settings
 	GoogleClientID     string
 	GoogleClientSecret string
 	GoogleRedirectURL  string
 
+	// Paystack settings
 	PaystackSecretKey string
 	PaystackPublicKey string
 
+	// Rate limiting settings
+	RateLimitRequests      int
+	RateLimitWindowSeconds int
 
-	RateLimitRequests       int
-	RateLimitWindowSeconds  int
-
-
-	MaxUploadSizeMB    int
-	UploadPath         string
-	AllowedImageTypes  string
+	// File upload settings
+	MaxUploadSizeMB   int
+	UploadPath        string
+	AllowedImageTypes string
 }
-
 
 func LoadConfig() *Config {
 	if err := godotenv.Load(); err != nil {
-		log.Println("Warning: .env file not found, using environment variable")
+		log.Println("Warning: .env file not found, using environment variables")
 	}
-	// helper to get env variable with original value and return default if not exist
-	getEnv := func (key, defaultValue string) string {
+
+	getEnv := func(key, defaultValue string) string {
 		if value := os.Getenv(key); value != "" {
 			return value
 		}
 		return defaultValue
 	}
 
-	// convert string env to int
 	getEnvAsInt := func(key string, defaultValue int) int {
 		if value := os.Getenv(key); value != "" {
 			if intVal, err := strconv.Atoi(value); err == nil {
 				return intVal
 			}
 		}
-
-		return defaultValue	
+		return defaultValue
 	}
 
 	return &Config{
 		// Database
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     getEnv("DB_PORT", "5432"),
-		DBUser:     getEnv("DB_USER", "carezo_user"),
+		DBUser:     getEnv("DB_USER", "driveease_user"),
 		DBPassword: getEnv("DB_PASSWORD", ""),
-		DBName:     getEnv("DB_NAME", "carezo_db"),
+		DBName:     getEnv("DB_NAME", "driveease_db"),
 
 		// Redis
 		RedisHost:     getEnv("REDIS_HOST", "localhost"),
@@ -100,29 +100,24 @@ func LoadConfig() *Config {
 		// Application
 		AppEnv:  getEnv("APP_ENV", "development"),
 		AppPort: getEnv("APP_PORT", "8080"),
-		AppName: getEnv("APP_NAME", "carezo"),
+		AppName: getEnv("APP_NAME", "DriveEase"),
 
 		// JWT
 		JWTSecret:              getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
 		JWTExpirationHours:     getEnvAsInt("JWT_EXPIRATION_HOURS", 24),
 		RefreshTokenExpiration: time.Duration(getEnvAsInt("REFRESH_TOKEN_EXPIRATION_DAYS", 30)) * 24 * time.Hour,
 
-		// OTP
+		// OTP (email-only)
 		OTPExpirationMinutes: getEnvAsInt("OTP_EXPIRATION_MINUTES", 10),
 		OTPLength:            getEnvAsInt("OTP_LENGTH", 6),
 
-		// Email
+		// Email (Gmail SMTP)
 		SMTPHost:     getEnv("SMTP_HOST", "smtp.gmail.com"),
 		SMTPPort:     getEnv("SMTP_PORT", "587"),
 		SMTPUser:     getEnv("SMTP_USER", ""),
 		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
-		FromEmail:    getEnv("FROM_EMAIL", "noreply@carezo.com"),
-		FromName:     getEnv("FROM_NAME", "carezo"),
-
-		// Twilio
-		TwilioAccountSID:  getEnv("TWILIO_ACCOUNT_SID", ""),
-		TwilioAuthToken:   getEnv("TWILIO_AUTH_TOKEN", ""),
-		TwilioPhoneNumber: getEnv("TWILIO_PHONE_NUMBER", ""),
+		FromEmail:    getEnv("FROM_EMAIL", "noreply@driveease.com"),
+		FromName:     getEnv("FROM_NAME", "DriveEase"),
 
 		// Google OAuth
 		GoogleClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
@@ -143,3 +138,5 @@ func LoadConfig() *Config {
 		AllowedImageTypes: getEnv("ALLOWED_IMAGE_TYPES", "jpg,jpeg,png,webp"),
 	}
 }
+
+

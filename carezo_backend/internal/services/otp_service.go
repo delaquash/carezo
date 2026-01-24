@@ -14,36 +14,37 @@ type OTPService struct {
 	cfg *configs.Config
 }
 
-func NewOTPServices (cfg *configs.Config) *OTPService {
+func NewOTPService(cfg *configs.Config) *OTPService {
 	return &OTPService{cfg: cfg}
 }
 
+// create OTP and stores it in Redis with expiration
 
-func(s *OTPService) GenerateAndStoreOTP(phoneNumber string)(string, error) {
-	// generate 6digit OTP
+func (s *OTPService) GenerateAndStoreOTP(email string) (string, error) {
+	// Generate 6-digit OTP
 	otp, err := utils.GeneratedOTP(s.cfg.OTPLength)
 	if err != nil {
 		return "", err
 	}
 
-	// store in redis with expiration
+	// Store in Redis with expiration
 	ctx := context.Background()
-	key := fmt.Sprintf("otp:%s", phoneNumber)
+	key := fmt.Sprintf("otp:%s", email) // Changed from phone to email
 	expiration := time.Duration(s.cfg.OTPExpirationMinutes) * time.Minute
-
 
 	err = database.RedisClient.Set(ctx, key, otp, expiration).Err()
 	if err != nil {
-		return "", fmt.Errorf("Failed to store OTP: %w", err)
+		return "", fmt.Errorf("failed to store OTP: %w", err)
 	}
+
 	return otp, nil
 }
 
-
-// this function checks if provided otp matches stored otp
-func (s *OTPService) VerifyOTP(phoneNumber, providedOTP string) (bool, error) {
+//  checks if provided OTP matches stored OTP
+func (s *OTPService) VerifyOTP(email, providedOTP string) (bool, error) {
 	ctx := context.Background()
-	key := fmt.Sprintf("otp:%s", phoneNumber)
+	// Changed from phone to email
+	key := fmt.Sprintf("otp:%s", email) 
 
 	// Get OTP from Redis
 	storedOTP, err := database.RedisClient.Get(ctx, key).Result()
@@ -51,13 +52,12 @@ func (s *OTPService) VerifyOTP(phoneNumber, providedOTP string) (bool, error) {
 		return false, fmt.Errorf("OTP not found or expired")
 	}
 
-	// compare OTPS
-
+	// Compare OTPs
 	if storedOTP != providedOTP {
 		return false, nil
 	}
 
-	// Delete OTP after successful verification 
+	// Delete OTP after successful verification (can only be used once)
 	database.RedisClient.Del(ctx, key)
 
 	return true, nil

@@ -47,6 +47,28 @@ func GenerateAccessToken(userID, email, role string, cfg *configs.Config) (strin
 	return tokenString, nil
 }
 
+func GenerateRefreshToken(userID string, cfg *configs.Config) (string, error) {
+	// Refresh token lives longer (e.g., 30 days)
+	expirationTime := time.Now().Add(cfg.RefreshTokenExpiration)
+
+	claims := &JWTClaims{
+		UserID: userID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    cfg.AppName,
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(cfg.JWTSecret))
+	if err != nil {
+		return "", fmt.Errorf("failed to sign refresh token: %w", err)
+	}
+
+	return tokenString, nil
+}
+
 
 // ValidateToken checks if a JWT token is valid and return the claims
 func ValidateToken(tokenString string, cfg *configs.Config) (*JWTClaims, error) {

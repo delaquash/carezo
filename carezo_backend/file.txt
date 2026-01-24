@@ -1,0 +1,78 @@
+# Start PostgreSQL and Redis using Docker
+docker-compose up -d postgres redis
+
+# Verify containers are running
+docker ps
+
+# You should see:
+# driveease_postgres
+# driveease_redis
+
+
+# Install migrate tool
+go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+# Run migrations
+migrate -path ./migrations \
+  -database "postgresql://driveease_user:your_password_here@localhost:5432/driveease_db?sslmode=disable" \
+  up
+
+# Verify tables were created
+docker exec -it driveease_postgres psql -U driveease_user -d driveease_db -c "\dt"
+
+# You should see:
+# users
+# cars
+# drivers
+# bookings
+# reviews
+# sessions
+
+
+# Run the application
+go run cmd/api/main.go
+
+# You should see:
+# 🚀 Starting DriveEase in development mode
+# ✅ Connected to PostgreSQL successfully
+# ✅ Connected to Redis successfully
+# 🌐 Server listening on port 8080
+
+
+http://localhost:8080/health ..... URL for testing
+
+
+Database queries for testing
+
+# Connect to PostgreSQL
+docker exec -it driveease_postgres psql -U driveease_user -d driveease_db
+
+# View all users
+SELECT id, email, phone_number, first_name, last_name, phone_verified, status, created_at FROM users;
+
+# View OTP codes in Redis
+docker exec -it driveease_redis redis-cli
+
+# In Redis CLI:
+KEYS otp:*
+GET otp:+2348012345678
+
+# View rate limit counters
+KEYS rate_limit:*
+GET rate_limit:127.0.0.1
+
+
+
+# 1. Start databases
+docker-compose up -d postgres redis
+
+# 2. Run migrations
+migrate -path ./migrations -database "postgresql://driveease_user:your_password@localhost:5432/driveease_db?sslmode=disable" up
+
+# 3. Start the app
+go run cmd/api/main.go
+
+# 4. Test registration
+curl -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"phone_number":"+2348012345678","email":"test@example.com","password":"Test123!"}'

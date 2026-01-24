@@ -14,185 +14,130 @@ import (
 
 type AuthHandler struct {
 	authService *services.AuthService
-	cfg			*configs.Config
+	cfg         *configs.Config
 }
 
 func NewAuthHandler(cfg *configs.Config) *AuthHandler {
 	return &AuthHandler{
-		authService:  services.NewAuthService(cfg),
-		cfg:		  cfg,
+		authService: services.NewAuthService(cfg),
+		cfg:         cfg,
 	}
 }
 
 // POST /api/auth/register
+// Body: {"email": "user@example.com", "password": "SecurePass123!"}
 func (h *AuthHandler) Register(c *gin.Context) {
-	// Bind JSON request to struct
-	var req model.RegisterRequest
-
+	var req models.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		return
 	}
 
-
-// Call service to register user
-
-err := h.authService.Register(&req)
+	err := h.authService.Register(&req)
 	if err != nil {
-			response.Error(c, http.StatusBadRequest, err.Error())
-			return
-		}
-	// Return resp
-response.Success(
-		c, 
-		http.StatusCreated, 
-		"Registration successfull.Please verify OTP sent to you",
-		nil,
-	)
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusCreated, "Registration successful. Please check your email for verification code.", nil)
 }
 
 
-// Verify otp that was sent
 // POST /api/auth/verify-otp
+// Body: {"email": "user@example.com", "otp": "123456"}
 func (h *AuthHandler) VerifyOTP(c *gin.Context) {
-	var req model.VerifyOTPRequest
+	var req models.VerifyOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(
-			c, 
-			http.StatusBadRequest,
-			"Invalid request data: "+err.Error())
-			return
+		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		return
 	}
 
 	err := h.authService.VerifyOTP(&req)
 	if err != nil {
-		response.Error(
-			c,
-			http.StatusBadRequest,
-			err.Error(),
-		)
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	response.Success(
-		c,
-		http.StatusOK,
-		"OTP verified successfully.Please complete your profile",
-		nil,
-	)
+
+	response.Success(c, http.StatusOK, "Email verified successfully. Please complete your profile.", nil)
 }
 
-// POST /api/auth/complete-profile
+
+// POST /api/auth/complete-profile?email=user@example.com
+// Body: {"first_name": "John", "last_name": "Doe", "age": 28, ...}
 func (h *AuthHandler) CompleteProfile(c *gin.Context) {
-	// Get phone nu,ber from query parameter (this is from otp verification)
-	phoneNumber := c.Query("phone")
-
-	if phoneNumber == "" {
-		response.Error(
-			c,
-			http.StatusBadRequest,
-			"Phone Number is required",
-		)
+	// Get email from query parameter
+	email := c.Query("email")
+	if email == "" {
+		response.Error(c, http.StatusBadRequest, "Email is required")
 		return
 	}
 
-	var req model.CompleteProfileRequest
+	var req models.CompleteProfileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(
-			c,
-			http.StatusBadRequest,
-			"Invalid request data: " +err.Error(),
-		)
+		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
 		return
 	}
-	err := h.authService.CompleteProfile(phoneNumber, &req)
-	if err != nil {
-		response.Error(
-			c,
-			http.StatusBadRequest,
-			err.Error(),
-		)
-		return
-	}
-	response.Success(
-		c,
-		http.StatusOK,
-		"Profile Completed Successfuly. You can login now",
-		nil,
-	)
-}
 
+	err := h.authService.CompleteProfile(email, &req)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Profile completed successfully. You can now login.", nil)
+}
 
 // POST /api/auth/login
+// Body: {"email": "user@example.com", "password": "SecurePass123!"}
 func (h *AuthHandler) Login(c *gin.Context) {
-	var req model.LoginRequest
+	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(
-			c,
-			http.StatusBadRequest,
-			"Invalid request data: "+err.Error(),
-		)
+		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
 		return
 	}
+
 	authResponse, err := h.authService.Login(&req)
 	if err != nil {
-		response.Error(
-			c,
-			http.StatusUnauthorized,
-			err.Error(),
-		)
+		response.Error(c, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	response.Success(
-		c,
-		http.StatusOK,
-		"Login Successful",
-		authResponse,
-	)
+	response.Success(c, http.StatusOK, "Login successful", authResponse)
 }
 
+// ForgotPassword handles password reset request
 // POST /api/auth/forgot-password
-func (h *AuthHandler) ForgotPassword(c *gin.Context){
-	var req model.ForgotPasswordRequest
-	if err := c.ShouldBindJSON(&req); err!= nil {
-		response.Error(
-			c,
-			http.StatusBadRequest,
-			"Invalid request data: "+err.Error(),
-		)
+// Body: {"email": "user@example.com"}
+func (h *AuthHandler) ForgotPassword(c *gin.Context) {
+	var req models.ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
 		return
 	}
+
 	err := h.authService.ForgotPassword(&req)
 	if err != nil {
-		// error is logged
 		c.Error(err)
 	}
-
 
 	response.Success(c, http.StatusOK, "If your email exists, you will receive a password reset link.", nil)
 }
 
-
+// ResetPassword handles actual password reset
 // POST /api/auth/reset-password
+// Body: {"token": "abc123...", "new_password": "NewPass456!"}
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
-	var req model.ResetPasswordRequest
+	var req models.ResetPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(
-			c,
-			http.StatusBadRequest,
-			"Invalid Request data: "+err.Error())
-			return
-	}
-	err := h.authService.ResetPassword(&req)
-	if err != nil {
-		response.Error(
-			c,
-			http.StatusBadRequest, err.Error())
+		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
 		return
 	}
-	response.Success(
-		c,
-		http.StatusOK,
-		"Password reset successful. You can login with your new password", nil,
-	)
 
+	err := h.authService.ResetPassword(&req)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Password reset successful. You can now login with your new password.", nil)
 }
