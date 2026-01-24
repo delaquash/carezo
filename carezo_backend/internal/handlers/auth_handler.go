@@ -105,7 +105,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Login successful", authResponse)
 }
 
-// ForgotPassword handles password reset request
+
 // POST /api/auth/forgot-password
 // Body: {"email": "user@example.com"}
 func (h *AuthHandler) ForgotPassword(c *gin.Context) {
@@ -123,7 +123,7 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	response.Success(c, http.StatusOK, "If your email exists, you will receive a password reset link.", nil)
 }
 
-// ResetPassword handles actual password reset
+
 // POST /api/auth/reset-password
 // Body: {"token": "abc123...", "new_password": "NewPass456!"}
 func (h *AuthHandler) ResetPassword(c *gin.Context) {

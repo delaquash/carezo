@@ -1,57 +1,59 @@
+
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
-
-    -- Authentication
-    email VARCHAR(255) UNIQUE,
-    phone_number VARCHAR(15) UNIQUE NOT NULL,
+    
+    -- Authentication (Email-only now)
+    email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-
-    -- OAUTH
+    
+    -- OAuth
     google_id VARCHAR(255) UNIQUE,
-    oauth_provider VARCHAR(100) NOT NULL,
-
-
+    oauth_provider VARCHAR(50) DEFAULT 'local', -- 'google', 'local'
+    
     -- Profile Information
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    age INTEGER CHECK(age >= 18 AND age <=100),
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    phone_number VARCHAR(20), -- Now optional, just for contact
+    age INTEGER CHECK (age >= 18 AND age <= 120),
+    age INTEGER CHECK (age >= 18 AND age <= 120),
     profession VARCHAR(100),
-    location VARCHAR(100),
+    location VARCHAR(255),
     profile_image_url TEXT,
-
-    -- Verification
+    
+    -- Verification (Email-only)
     email_verified BOOLEAN DEFAULT FALSE,
-    phone_verified BOOLEAN DEFAULT FALSE,
     email_verification_token VARCHAR(255),
-    phone_verification_token VARCHAR(6),
     otp_expires_at TIMESTAMP,
-
-
+    
+    -- Account Status
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'deleted')),
+    role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+    
     -- Password Reset
     reset_token VARCHAR(255),
-    reset_token_expires_at TIMESTAMP
-
-    -- timestamps
+    reset_token_expires_at TIMESTAMP,
+    
+    -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_login_at TIMESTAMP,
-    deleted_at TIMESTAMP,
-)
-    -- indexes for faster queries
+    deleted_at TIMESTAMP
+);
+
+-- Indexes
 CREATE INDEX idx_users_email ON users(email) WHERE deleted_at IS NULL;
-CREATE INDEX idx_users_phone ON users(phone_number) WHERE deleted_at IS NULL;
-CREATE INDEX idx_users_google_id ON users(google_id) WHERE deleted_at is NULL;
+CREATE INDEX idx_users_google_id ON users(google_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_users_status ON users(status) WHERE deleted_at IS NULL;
 CREATE INDEX idx_users_role ON users(role);
 
 -- Update timestamp trigger
 CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURN TRIGGER AS $$
+RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP
+    NEW.updated_at = CURRENT_TIMESTAMP;
     RETURN NEW;
 END;
-$$ language "plpgsql";
+$$ language 'plpgsql';
 
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_columnt();
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
