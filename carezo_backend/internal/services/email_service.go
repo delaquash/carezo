@@ -15,7 +15,7 @@ func NewEmailService(cfg *configs.Config) *EmailService {
 	return &EmailService{cfg: cfg}
 }
 
-// SendOTPEmail sends OTP code via email
+
 func (s *EmailService) SendOTPEmail(to, otp string) error {
 	subject := "Your Carezo Verification Code"
 	body := fmt.Sprintf(`
@@ -32,7 +32,7 @@ func (s *EmailService) SendOTPEmail(to, otp string) error {
 	return s.sendEmail(to, subject, body)
 }
 
-// SendPasswordResetEmail sends password reset link
+
 func (s *EmailService) SendPasswordResetEmail(to, resetToken string) error {
 	// In production, this would be your actual website URL
 	resetLink := fmt.Sprintf("http://localhost:3000/reset-password?token=%s", resetToken)

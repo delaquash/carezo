@@ -25,7 +25,7 @@ type User struct {
 	Location        *string `json:"location,omitempty" db:"location"`
 	ProfileImageURL *string `json:"profile_image_url,omitempty" db:"profile_image_url"`
 
-	// Verification (email-only now)
+	// Verification 
 	EmailVerified          bool       `json:"email_verified" db:"email_verified"`
 	EmailVerificationToken *string    `json:"-" db:"email_verification_token"`
 	OTPExpiresAt           *time.Time `json:"-" db:"otp_expires_at"`
@@ -45,19 +45,19 @@ type User struct {
 	DeletedAt   *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
 }
 
-// RegisterRequest - Email and password only
+// RegisterRequest 
 type RegisterRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8"`
 }
 
-// VerifyOTPRequest - Email-based OTP verification
+// VerifyOTPRequest 
 type VerifyOTPRequest struct {
 	Email string `json:"email" binding:"required,email"`
 	OTP   string `json:"otp" binding:"required,len=6"`
 }
 
-// CompleteProfileRequest - After OTP verification
+// CompleteProfileRequest 
 type CompleteProfileRequest struct {
 	FirstName   string  `json:"first_name" binding:"required"`
 	LastName    string  `json:"last_name" binding:"required"`
@@ -67,7 +67,7 @@ type CompleteProfileRequest struct {
 	Location    *string `json:"location,omitempty"`
 }
 
-// LoginRequest - Email and password
+// LoginRequest
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`

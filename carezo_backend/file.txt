@@ -1,3 +1,11 @@
+Car management (add, list, search, filter)
+Driver management
+Booking system
+Payment integration (Paystack)
+Admin panel
+
+
+
 # Start PostgreSQL and Redis using Docker
 docker-compose up -d postgres redis
 
