@@ -17,4 +17,11 @@ type Car struct {
 	MaximumSpeed   *int      `json:"maximum_speed,omitempty" db:"maximum_speed"`
 	Mileage			int		 `json:`
 
+		// Driver Information (assigned driver)
+	DriverName   *string `json:"driver_name,omitempty" db:"driver_name"`     
+	DriverNumber *string `json:"driver_number,omitempty" db:"driver_number"` 
+	DriverMiles  *int    `json:"driver_miles,omitempty" db:"driver_miles"`   
+
+
+
 }
