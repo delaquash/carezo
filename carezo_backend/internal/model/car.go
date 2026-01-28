@@ -9,7 +9,7 @@ type Car struct {
 	Brand					string  `json:"brand" db:"brand"`
 	Year					int		`json:"year"  db:"year"`
 	Color   				string	`json:"color" db:"color"`
-	LicensePlace			string	`json:"licence_place" db:"license_plate"`
+	LicencePlate			string	`json:"licence_plate" db:"license_plate"`
 
 
 	EngineOutput     	   *string `json:"engine_output,omitempty" db:"engine_output"` 
@@ -32,7 +32,7 @@ type Car struct {
 
 	IsAvailable  			bool      `json:"is_available" db:"is_available"`
 	Status       			string    `json:"status" db:"status"`
-	CurrentLocation 	   *string `json:"current_location, omitempty" db:"current_location"`
+	CurrentLocation 	   *string    `json:"current_location, omitempty" db:"current_location"`
 
 	CreatedAt 				time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt 				time.Time  `json:"updated_at" db:"updated_at"`
@@ -53,7 +53,7 @@ type CreateCarRequest struct {
 	Brand           string   `json:"brand" binding:"required"`
 	Year            int      `json:"year" binding:"required,min=1900"`
 	Color           string   `json:"color" binding:"required"`
-	LicensePlate    string   `json:"license_plate" binding:"required"`
+	LicencePlate    string   `json:"license_plate" binding:"required"`
 	EngineOutput    *string  `json:"engine_output,omitempty"`
 	Transmission    string   `json:"transmission" binding:"required,oneof=automatic manual"`
 	FuelType        string   `json:"fuel_type" binding:"required,oneof=petrol diesel electric hybrid"`
