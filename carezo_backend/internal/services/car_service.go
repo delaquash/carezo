@@ -1,7 +1,7 @@
 package services
 
 import (
-	// "database/sql"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -71,6 +71,23 @@ func (s *CarService) CreateCar(req *models.CreateCarRequest) (*models.Car, error
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create car: %w", err)
+	}
+	return &car, nil
+}
+
+
+// get a single car by ID
+func(s *CarService) GetCarByID(carID string)(*models.Car, error) {
+	var car models.Car
+
+	query := `SELECT * FROM cars WHERE id = $1 and deleted_at IS NULL`
+	err := database.DB.Get(&car, query, carID)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("Car not found!!!")
+		}
+		return nil, fmt.Errorf("Database error: %w", err)
 	}
 	return &car, nil
 }
