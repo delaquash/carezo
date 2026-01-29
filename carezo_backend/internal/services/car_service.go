@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/delaquash/carezo/internal/database"
 	models "github.com/delaquash/carezo/internal/model"
@@ -88,6 +89,142 @@ func(s *CarService) GetCarByID(carID string)(*models.Car, error) {
 			return nil, errors.New("Car not found!!!")
 		}
 		return nil, fmt.Errorf("Database error: %w", err)
+	}
+	return &car, nil
+}
+
+
+func(s *CarService) UpdateCar(carID string, req *models.UpdateCarRequest) (*models.Car, error) {
+	// check if car exist
+	_, err := s.GetCarByID(carID)
+
+	if err != nil {
+		return nil, err
+	}
+
+
+	// dynamic update query that only update provided fields
+	var updates []string
+	var args []interface{}
+
+	argCount := 1
+
+	if req.Model != nil {
+		updates = append(updates, fmt.Sprintf("model = $%d", argCount))
+		args = append(args, *req.Model)
+		argCount++
+	}
+
+	if req.Brand != nil {
+		updates = append(updates, fmt.Sprintf("brand = $%d", argCount))
+		args = append(args, *req.Brand)
+		argCount++
+	}
+
+	if req.Year != nil {
+		updates = append(updates, fmt.Sprintf("year = $%d", argCount))
+		args = append(args, *req.Year)
+		argCount++
+	}
+
+	if req.Color != nil {
+		updates = append(updates, fmt.Sprintf("color = $%d", argCount))
+		args = append(args, *req.Color)
+		argCount++
+	}
+
+	if req.LicensePlate != nil {
+		updates = append(updates, fmt.Sprintf("license_plate = $%d", argCount))
+		args = append(args, *req.LicensePlate)
+		argCount++
+	}
+	if req.Transmission != nil {
+		updates = append(updates, fmt.Sprintf("transmission = $%d", argCount))
+		args = append(args, *req.Transmission)
+		argCount++
+	}
+	if req.FuelType != nil {
+		updates = append(updates, fmt.Sprintf("fuel_type = $%d", argCount))
+		args = append(args, *req.FuelType)
+		argCount++
+	}
+	if req.SeatingCapacity != nil {
+		updates = append(updates, fmt.Sprintf("seating_capacity = $%d", argCount))
+		args = append(args, *req.SeatingCapacity)
+		argCount++
+	}
+	if req.Mileage != nil {
+		updates = append(updates, fmt.Sprintf("mileage = $%d", argCount))
+		args = append(args, *req.Mileage)
+		argCount++
+	}
+	if req.DriverName != nil {
+		updates = append(updates, fmt.Sprintf("driver_name = $%d", argCount))
+		args = append(args, *req.DriverName)
+		argCount++
+	}
+	if req.DriverNumber != nil {
+		updates = append(updates, fmt.Sprintf("driver_number = $%d", argCount))
+		args = append(args, *req.DriverNumber)
+		argCount++
+	}
+	if req.CautionFee != nil {
+		updates = append(updates, fmt.Sprintf("caution_fee = $%d", argCount))
+		args = append(args, *req.CautionFee)
+		argCount++
+	}
+	if req.IsAvailable != nil {
+		updates = append(updates, fmt.Sprintf("is_available = $%d", argCount))
+		args = append(args, *req.IsAvailable)
+		argCount++
+	}
+	if req.Status != nil {
+		updates = append(updates, fmt.Sprintf("status = $%d", argCount))
+		args = append(args, *req.Status)
+		argCount++
+	}
+	if req.CurrentLocation != nil {
+		updates = append(updates, fmt.Sprintf("current_location = $%d", argCount))
+		args = append(args, *req.CurrentLocation)
+		argCount++
+	}
+	if req.CarFeatures != nil {
+		featuresJSON, _ := json.Marshal(req.CarFeatures)
+		updates = append(updates, fmt.Sprintf("features = $%d", argCount))
+		args = append(args, featuresJSON)
+		argCount++
+	}
+	if req.HourlyRate != nil {
+		hourlyRateJSON, _ := json.Marshal(req.HourlyRate)
+		updates = append(updates, fmt.Sprintf("hourly_rate = $%d", argCount))
+		args = append(args, hourlyRateJSON)
+		argCount++
+	}
+
+	if len(updates) == 0 {
+		return nil, errors.New("no fields to update")
+	}
+
+
+	// add updated_at
+	updates = append(updates, "updated_at = CURRENT_TIMESTAMP")
+
+	// add carID to args
+	args = append(args, carID)
+
+	// Execute update
+	query := fmt.Sprintf(`
+		UPDATE cars
+		SET %s
+		WHERE id = $%d AND deleted_at IS NULL
+		RETURNING * 
+		`, strings.Join(updates, ", ")argCount
+	)
+	var car models.Car
+	err = database.DB.Get(&car, query, args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("Failed to update car: %w", err)
 	}
 	return &car, nil
 }
