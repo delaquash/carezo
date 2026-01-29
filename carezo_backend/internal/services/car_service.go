@@ -53,7 +53,7 @@ func (s *CarService) CreateCar(req *models.CreateCarRequest) (*models.Car, error
 			INSERT INTO cars (
 			id, model, brand, year, color, licence_plate, engine_output, transmission, fuel_type
 			seating_capacity, maximum_speed, mileage, driver_name,driver_number, driver_miles, hourly_rate,
-			caution_fee, car_features, images, is_available, status, current_location
+			caution_fee, features, images, is_available, status, current_location
 			) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, '[]'::jsonb, true, "active", $19
 			)
@@ -188,8 +188,8 @@ func(s *CarService) UpdateCar(carID string, req *models.UpdateCarRequest) (*mode
 		args = append(args, *req.CurrentLocation)
 		argCount++
 	}
-	if req.CarFeatures != nil {
-		featuresJSON, _ := json.Marshal(req.CarFeatures)
+	if req.Features != nil {
+		featuresJSON, _ := json.Marshal(req.Features)
 		updates = append(updates, fmt.Sprintf("features = $%d", argCount))
 		args = append(args, featuresJSON)
 		argCount++
@@ -218,8 +218,7 @@ func(s *CarService) UpdateCar(carID string, req *models.UpdateCarRequest) (*mode
 		SET %s
 		WHERE id = $%d AND deleted_at IS NULL
 		RETURNING * 
-		`, strings.Join(updates, ", ")argCount
-	)
+		`, strings.Join(updates, ", "),argCount)
 	var car models.Car
 	err = database.DB.Get(&car, query, args...)
 
@@ -227,4 +226,182 @@ func(s *CarService) UpdateCar(carID string, req *models.UpdateCarRequest) (*mode
 		return nil, fmt.Errorf("Failed to update car: %w", err)
 	}
 	return &car, nil
+}
+
+// Delete car by ID (soft delete)
+
+func (s *CarService) DeleteCar(carID string) error {
+	// check if car exist
+	_,  err := s.GetCarByID(carID)
+
+	if err != nil {
+		return err	
+	}
+
+	// soft delete car
+	query := `UPDATE cars SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL`
+
+	result, err  := database.DB.Exec(query, carID)
+	
+	if err != nil {
+		return fmt.Errorf("Failed to delete car: %w", err)
+	}
+	rows, _ := result.RowsAffected()
+
+	if rows == 0 {
+		return errors.New("Car not found or already deleted")
+	}
+
+	return nil
+}
+
+
+// Search for cars and filter by pagination
+func (s *CarService) SearchCars(req *models.SearchCarsRequest)(*models.CarListResponse, error) {
+	// build WHERE clause dynamically based on filters
+
+	var conditions []string
+	var args []interface{}
+	argCount := 1
+
+	// exclude deleted acrs
+	conditions = append(conditions, "deleted_at IS NULL")
+
+
+	// apply filters
+
+	if req.Brand != nil {
+		conditions = append(conditions, fmt.Sprintf("LOWER(brand) = LOWER($%d)", argCount))
+		args = append(args, *req.Brand)
+		argCount++
+	}
+
+	if req.Model != nil {
+		conditions = append(conditions, fmt.Sprintf("LOWER(model) LIKE LOWER($%d)", argCount))
+		args = append(args, "%"+*req.Model+"%")
+		argCount++
+	}
+	if req.MinYear != nil {
+		conditions = append(conditions, fmt.Sprintf("year >= $%d", argCount))
+		args = append(args, *req.MinYear)
+		argCount++
+	}
+	if req.MaxYear != nil {
+		conditions = append(conditions, fmt.Sprintf("year <= $%d", argCount))
+		args = append(args, *req.MaxYear)
+		argCount++
+	}
+	if req.Color != nil {
+		conditions = append(conditions, fmt.Sprintf("LOWER(color) = LOWER($%d)", argCount))
+		args = append(args, *req.Color)
+		argCount++
+	}
+	if req.Transmission != nil {
+		conditions = append(conditions, fmt.Sprintf("transmission = $%d", argCount))
+		args = append(args, *req.Transmission)
+		argCount++
+	}
+	if req.FuelType != nil {
+		conditions = append(conditions, fmt.Sprintf("fuel_type = $%d", argCount))
+		args = append(args, *req.FuelType)
+		argCount++
+	}
+	if req.MinSeats != nil {
+		conditions = append(conditions, fmt.Sprintf("seating_capacity >= $%d", argCount))
+		args = append(args, *req.MinSeats)
+		argCount++
+	}
+	if req.MaxSeats != nil {
+		conditions = append(conditions, fmt.Sprintf("seating_capacity <= $%d", argCount))
+		args = append(args, *req.MaxSeats)
+		argCount++
+	}
+	if req.IsAvailable != nil {
+		conditions = append(conditions, fmt.Sprintf("is_available = $%d", argCount))
+		args = append(args, *req.IsAvailable)
+		argCount++
+	}
+	if req.Location != nil {
+		conditions = append(conditions, fmt.Sprintf("LOWER(current_location) LIKE LOWER($%d)", argCount))
+		args = append(args, "%"+*req.Location+"%")
+		argCount++
+	}
+
+	// 2. Count total matching cars (for pagination)
+	whereClause := strings.Join(conditions, " AND ")
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM cars WHERE %s", whereClause)
+	var total int
+	err := database.DB.Get(&total, countQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count cars: %w", err)
+	}
+
+	//  build ORDER by clause
+
+	orderBy := "created_at DESC"
+
+	if req.SortBy != "" {
+		order := "ASC"
+
+		if req.OrderBy != "" {
+			order = "DESC"
+		}
+		orderBy = fmt.Sprintf("%s %s", req.SortBy, order)
+	}
+
+
+	// calculation for pagination
+
+	page := req.Page
+
+	if page < 1 {
+		page = 1
+	}
+
+	perPage := req.PerPage
+
+	if perPage < 1 {
+		perPage = 10
+	}
+
+	offset := (page - 1) * perPage
+
+	//  query cars with pagination
+	query := fmt.Sprintf(`
+		SELECT * FROM cars
+		WHERE %s
+		ORDER BY %s
+		LIMIT $%d OFFSET $%d
+	`, whereClause, orderBy, argCount, argCount+1)
+	args = append(args, perPage, offset)
+
+	var cars []*models.Car
+	err = database.DB.Select(&cars, query, args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch cars: %w", err)
+	}
+
+	// claculate total pages
+	totalPages := (total + perPage - 1) / perPage
+
+
+	// response
+	return  &models.CarListResponse{
+		Cars: cars,
+		Pagination: models.PaginationMeta{
+			Page:   page,
+			PerPage: perPage,
+			Total: total,
+			TotalPages: totalPages,
+		},
+
+		Filters: map[string]interface{} {
+			"brand": req.Brand,
+			"model": req.Model,
+			"transmission": req.Transmission,
+			"fuel_type": req.FuelType,
+			"is_available": req.IsAvailable,
+		},
+	}, nil
 }

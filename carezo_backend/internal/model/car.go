@@ -26,7 +26,7 @@ type Car struct {
 	HourlyRate   			JSONB    `json:"hourly_rate" db:"hourly_rate"` 
 	CautionFee   			float64  `json:"caution_fee" db:"caution_fee"`
 
-	CarFeatures  			JSONB    `json:"car_features" db:"car_features"`
+	Features  			JSONB    `json:"features" db:"features"`
 
 	Images       			JSONB     `json:"images" db:"images"`
 
