@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/delaquash/carezo/internal/database"
 	models "github.com/delaquash/carezo/internal/model"
@@ -404,4 +405,34 @@ func (s *CarService) SearchCars(req *models.SearchCarsRequest)(*models.CarListRe
 			"is_available": req.IsAvailable,
 		},
 	}, nil
+}
+
+
+// Get available cars for given date range
+func (s *CarService)GetAvailableCars(pickupDate, returnDate time.Time)([]*models.Car, error) {
+	// query cars not booked within requested period and date range
+	query := `
+		SELECT c.* FROM cars c
+	    WHERE c.is_available = true 
+		AND c.status = "active	
+		AND c.deleted_at IS NULL
+		AND c.id NOT IN (
+			SELECT car_id FROM bookings
+			WHERE status IN ("confirmed", "in_progress")
+			AND (
+				(pickup_date <= $1 AND return_date >= $1) OR
+				(pickup_date <= $2 AND return_date >= $2) OR
+				(pickup_date >= $1 AND return_date <= $1)
+
+			)
+        )
+			ORDER BY created_at DESC
+	`
+	var cars []*models.Car
+	err := database.DB.Select(&cars, query, pickupDate, returnDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch available cars: %w", err)
+	}
+
+	return cars, nil
 }
