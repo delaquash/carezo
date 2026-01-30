@@ -61,10 +61,13 @@ func main() {
 		})
 	})
 
+	// handlers
+	authHandler := handlers.NewAuthHandler(cfg)
+	carHandler := handlers.NewCarHandler()
+
 	// routes
 	api := router.Group("/api") 
 	{
-		authHandler := handlers.NewAuthHandler(cfg)
 		auth := api.Group("/auth") 
 		{
 			auth.POST("/register", authHandler.Register)
@@ -75,6 +78,15 @@ func main() {
 			auth.POST("/reset-password", authHandler.ResetPassword)
 		}
 
+			// Public car routes (anyone can view cars)
+		cars := api.Group("/cars")
+		{
+			cars.GET("", carHandler.ListAllCars)              // GET /api/cars?page=1&per_page=20
+			cars.GET("/search", carHandler.SearchCars)        // GET /api/cars/search?brand=Toyota&transmission=automatic
+			cars.GET("/available", carHandler.GetAvailableCars) // GET /api/cars/available?pickup_date=2024-01-15T10:00:00Z&return_date=2024-01-20T18:00:00Z
+			cars.GET("/:id", carHandler.GetCar)               // GET /api/cars/{car_id}
+		}
+
 		// protected route
 		protected := api.Group("")
 		protected.Use(middleware.AuthMiddleware(cfg))
@@ -82,13 +94,21 @@ func main() {
 			// User Profile Routes
 			protected.GET("/me", func(c *gin.Context) {
 				userID := c.GetString("user_id")
-				c.JSON(http.StatusOK, gin.H{"user_id": userID})
+				userEmail := c.GetString("user_email")
+				c.JSON(http.StatusOK, gin.H{
+					"user_id": userID,
+					"email": userEmail,
+				})
 			})
 
 			// admin route
 			admin := protected.Group("/admin")
 			admin.Use(middleware.RequireRole("admin"))
 			{
+				// admin only
+				admin.POST("/cars", carHandler.CreateCar)
+				admin.PUT("/cars/:id", carHandler.UpdateCar)
+				admin.DELETE("/cars/:id", carHandler.DeleteCar)
 				admin.GET("/users", func(c *gin.Context) {
 					c.JSON(http.StatusOK, gin.H{"message": "Admin users list"})
 				})
@@ -105,9 +125,24 @@ func main() {
 		IdleTimeout: 	60 * time.Second,
 	}
 
-	go func ()  {
-		log.Printf("Server listening on port %s", cfg.AppPort)
-		log.Printf("API Documentation: http://localhost:%s/health", cfg.AppPort)
+	go func() {
+		log.Printf("🌐 Server listening on port %s", cfg.AppPort)
+		log.Println("\n📝 Available Endpoints:")
+		log.Println("  PUBLIC:")
+		log.Println("    POST   /api/auth/register")
+		log.Println("    POST   /api/auth/login")
+		log.Println("    GET    /api/cars")
+		log.Println("    GET    /api/cars/search")
+		log.Println("    GET    /api/cars/available")
+		log.Println("    GET    /api/cars/:id")
+		log.Println("\n  USER (Requires Authentication):")
+		log.Println("    GET    /api/me")
+		log.Println("\n  ADMIN (Requires Admin Role):")
+		log.Println("    POST   /api/admin/cars")
+		log.Println("    PUT    /api/admin/cars/:id")
+		log.Println("    DELETE /api/admin/cars/:id")
+		log.Println()
+
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Failed to start server: %v", err)
 		}

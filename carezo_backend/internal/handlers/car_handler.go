@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	models "github.com/delaquash/carezo/internal/model"
 	"github.com/delaquash/carezo/internal/services"
@@ -151,4 +152,51 @@ func (h *CarHandler) ListAllCars(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "Cars Retrieved Successfully", result)
+}
+
+
+// GET /api/cars/available
+// Query params: pickup_date, return_date (ISO 8601 format)
+
+func(h *CarHandler) GetAvailableCars(c *gin.Context) {
+	pickupDateStr := c.Query("pickup_date")
+	returnDateStr := c.Query("return_date")
+
+
+	if pickupDateStr == "" || returnDateStr == "" {
+		response.Error(c, http.StatusBadRequest, "Pick Up Date and ReturnDate are required")
+	}
+
+
+	// Parse dates
+	pickupDate, err := time.Parse(time.RFC3339, pickupDateStr)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid pickup_date format. Use ISO 8601 (e.g., 2024-01-15T10:00:00Z)")
+		return
+	}
+
+	returnDate, err := time.Parse(time.RFC3339, returnDateStr)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid return_date format. Use ISO 8601 (e.g., 2024-01-20T18:00:00Z)")
+		return
+	}
+
+	// Validate dates
+	if returnDate.Before(pickupDate) {
+		response.Error(c, http.StatusBadRequest, "return_date must be after pickup_date")
+		return
+	}
+
+	cars, err := h.carService.GetAvailableCars(pickupDate, returnDate)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Available cars retrieved successfully", gin.H{
+		"cars":        cars,
+		"pickup_date": pickupDate,
+		"return_date": returnDate,
+		"total":       len(cars),
+	})
 }
