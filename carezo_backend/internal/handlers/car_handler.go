@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	models "github.com/delaquash/carezo/internal/model"
@@ -115,4 +116,39 @@ func (h *CarHandler) SearchCars(c *gin.Context){
 	response.Success(c, http.StatusOK, "Cars retrieved successfull", result)
 }
 
+// Get  /api/cars
+// query params: pag, per_page
 
+func (h *CarHandler) ListAllCars(c *gin.Context) {
+	// create search request with pagination
+	var req models.SearchCarsRequest
+	req.Page = 1
+	req.PerPage = 20
+
+	// Get page and per_page from query if provided
+	if page, ok :=c.GetQuery("page"); ok {
+		var p int
+		if _, err := fmt.Sscanf(page, "%d", &p); err == nil && p > 0 {
+			req.Page = p
+		}
+	}
+
+	if perPage, ok := c.GetQuery("per_page"); ok {
+		var pp int
+		if _, err := fmt.Sscanf(perPage, "%d", &pp); err == nil && pp > 0 && pp <= 100 {
+			req.PerPage = pp
+		}
+	}
+
+	available := true
+	req.IsAvailable = &available
+
+	result, err := h.carService.SearchCars(&req)
+
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Cars Retrieved Successfully", result)
+}
