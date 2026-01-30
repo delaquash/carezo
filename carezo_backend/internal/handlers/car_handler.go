@@ -71,3 +71,16 @@ func (h *CarHandler) UpdateCar(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "Car Updated Successfully", car)
 }
+
+
+// Delete /api/admin/car/:id
+func(h *CarHandler) DeleteCar(c *gin.Context) {
+	carID := c.Param("id")
+
+	err := h.carService.DeleteCar(carID)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	response.Success(c, http.StatusOK, "Car deleted successfully", nil)
+}
