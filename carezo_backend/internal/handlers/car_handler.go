@@ -84,3 +84,35 @@ func(h *CarHandler) DeleteCar(c *gin.Context) {
 	}
 	response.Success(c, http.StatusOK, "Car deleted successfully", nil)
 }
+
+// GET /api/cars/search
+// Query params: brand, model, min_year, max_year, color, transmission, fuel_type,
+//               min_seats, max_seats, location, is_available, sort_by, order_by, page, per_page
+
+func (h *CarHandler) SearchCars(c *gin.Context){
+	var req models.SearchCarsRequest
+
+	// bind every query parameters
+	if err := c.ShouldBindQuery(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid query parameters: "+err.Error())
+		return
+	}
+
+	// default if no query is provided
+	if req.Page == 0 {
+		req.Page = 1
+	}
+
+	if req.PerPage == 0 {
+		req.PerPage = 20
+	}
+
+	result, err := h.carService.SearchCars(&req)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+	}
+
+	response.Success(c, http.StatusOK, "Cars retrieved successfull", result)
+}
+
+
