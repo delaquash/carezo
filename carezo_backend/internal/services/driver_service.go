@@ -391,3 +391,18 @@ if req.SortBy != "" {
 	}, nil
 }
 
+func (s *DriverService) GetDriverReviews(driverID string) ([]*models.Review, error){
+	var reviews []*models.Review
+	query := `
+		SELECT * FROM reviews
+		WHERE driver_id = $1 AND status = "published"
+		ORDER BY created_at DESC
+	`
+
+	err := database.DB.Select(&reviews, query, driverID)
+
+	if err != nil {
+		return nil, fmt.Errorf("Failed to fetch reviews: %w", err)
+	}
+	return reviews, nil
+}
