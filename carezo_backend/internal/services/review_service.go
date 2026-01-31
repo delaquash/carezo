@@ -75,3 +75,18 @@ func (r *ReviewService)  CreateReview(userID string, req *models.CreateReviewReq
 	// automatically update drivers average rating
 	return  &review, nil
 }
+
+// Get single review by ID
+func (r *ReviewService) GetReviewByID(reviewID string)(*models.Review, error) {
+	var review models.Review
+	query := `SELECT * FROM reviews WHERE id = $1`
+	err := database.DB.Get(&review, reviewID, query)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("Review not found")
+		}
+		return nil, fmt.Errorf("Database error: %w", err)
+	}
+	return &review, nil
+}
