@@ -1,6 +1,5 @@
 package models
 
-
 import (
 	"time"
 )
@@ -51,7 +50,7 @@ type CreateDriverRequest struct {
 	LastName          string   `json:"last_name" binding:"required"`
 	Age               int      `json:"age" binding:"required,min=21,max=70"`
 	Gender            string   `json:"gender" binding:"required,oneof=male female"`
-	Nationality       string   `json:"nationality" binding:"required"`
+	State             string   `json:"state" binding:"required"`
 	Religion          *string  `json:"religion,omitempty"`
 	Complexion        string   `json:"complexion" binding:"required"`
 	Height            int      `json:"height" binding:"required,min=140,max=220"` // cm
@@ -70,7 +69,7 @@ type UpdateDriverRequest struct {
 	LastName          *string  `json:"last_name,omitempty"`
 	Age               *int     `json:"age,omitempty"`
 	Gender            *string  `json:"gender,omitempty"`
-	Nationality       *string  `json:"nationality,omitempty"`
+	State             *string  `json:"state,omitempty"`
 	Religion          *string  `json:"religion,omitempty"`
 	Complexion        *string  `json:"complexion,omitempty"`
 	Height            *int     `json:"height,omitempty"`
@@ -88,8 +87,8 @@ type UpdateDriverRequest struct {
 // SearchDriversRequest - Search and filter drivers
 type SearchDriversRequest struct {
 	// Filters
-	Gender            *string  `form:"gender"`      // "male" or "female"
-	Nationality       *string  `form:"nationality"`
+	Gender            *string  `form:"gender"`      
+	State             *string  `form:"state"`
 	Religion          *string  `form:"religion"`
 	Complexion        *string  `form:"complexion"`
 	MinAge            *int     `form:"min_age"`
@@ -99,7 +98,7 @@ type SearchDriversRequest struct {
 	MinExperience     *int     `form:"min_experience"`
 	MinRating         *float64 `form:"min_rating"`
 	IsAvailable       *bool    `form:"is_available"`
-	Language          *string  `form:"language"` // Must speak this language
+	Language          *string  `form:"language"` 
 
 	// Sorting
 	SortBy  string `form:"sort_by" binding:"omitempty,oneof=average_rating years_of_experience total_trips age"`
