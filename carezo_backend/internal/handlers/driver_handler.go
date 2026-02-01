@@ -43,3 +43,4 @@ func(h *DriverHandler) CreateDriver(c *gin.Context) {
 
 // Get single driver details
 // GET /api/driver/:id\
+
