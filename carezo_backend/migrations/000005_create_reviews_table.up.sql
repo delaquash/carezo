@@ -1,4 +1,3 @@
--- Reviews table (for drivers)
 CREATE TABLE IF NOT EXISTS reviews (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     
@@ -10,14 +9,14 @@ CREATE TABLE IF NOT EXISTS reviews (
     -- Rating (1-5 stars)
     rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
     
-    -- Review Content
-    title VARCHAR(255),
-    comment TEXT,
-    
-    -- Category Ratings (optional detailed ratings)
+    -- Detailed Ratings (optional)
     punctuality_rating INTEGER CHECK (punctuality_rating >= 1 AND punctuality_rating <= 5),
     professionalism_rating INTEGER CHECK (professionalism_rating >= 1 AND professionalism_rating <= 5),
     vehicle_condition_rating INTEGER CHECK (vehicle_condition_rating >= 1 AND vehicle_condition_rating <= 5),
+    
+    -- Review Content
+    title VARCHAR(255),
+    comment TEXT,
     
     -- Status
     status VARCHAR(20) DEFAULT 'published' CHECK (status IN ('published', 'hidden', 'flagged')),
@@ -41,10 +40,11 @@ ALTER TABLE reviews ADD CONSTRAINT unique_review_per_booking UNIQUE (booking_id)
 CREATE TRIGGER update_reviews_updated_at BEFORE UPDATE ON reviews
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Trigger to update driver's average rating
+-- Trigger to update driver's average rating automatically
 CREATE OR REPLACE FUNCTION update_driver_rating()
 RETURNS TRIGGER AS $$
 BEGIN
+    -- Update driver's average rating and review count
     UPDATE drivers
     SET 
         average_rating = (
@@ -68,3 +68,4 @@ AFTER INSERT OR UPDATE ON reviews
 FOR EACH ROW
 WHEN (NEW.status = 'published')
 EXECUTE FUNCTION update_driver_rating();
+
