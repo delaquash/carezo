@@ -114,25 +114,25 @@ func (h *DriverHandler) SearchDrivers(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Driver retrieved successfully", result)
 }
 
-// // ListAllDrivers
-// // GET /api/drivers
-// func (h *DriverHandler) ListAllDrivers(c *gin.Context) {
-// 	var req models.SearchDriversRequest
-// 	req.Page = 1
-// 	req.PerPage = 10
+// ListAllDrivers
+// GET /api/drivers
+func (h *DriverHandler) ListAllDrivers(c *gin.Context) {
+	var req models.SearchDriversRequest
+	req.Page = 1
+	req.PerPage = 10
 
-// 	// show only available drivers
-// 	available := true
-// 	req.IsAvailable = &available
+	// show only available drivers
+	available := true
+	req.IsAvailable = &available
 
-// 	result, err := h.driverService.SearchDrivers(&req)
+	result, err := h.driverService.SearchDrivers(&req)
 
-// 	if err != nil {
-// 		response.Error(c, http.StatusInternalServerError, err.Error())
-// 		return
-// 	}
-// 	response.Success(c, http.StatusOK, "Driver retrieved successfully", result)
-// }
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	response.Success(c, http.StatusOK, "Driver retrieved successfully", result)
+}
 
 // // GetDriverReviews for all drivers
 // // GET /api/drivers/:id/reviews
