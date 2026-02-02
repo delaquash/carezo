@@ -134,13 +134,41 @@ func (h *DriverHandler) ListAllDrivers(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Driver retrieved successfully", result)
 }
 
-// // GetDriverReviews for all drivers
-// // GET /api/drivers/:id/reviews
-// func (h *DriverHandler) GetDriverReviews(c *gin.Context) {
-// 	driverID := c.Param("id")
+// GetDriverReviews for all drivers
+// GET /api/drivers/:id/reviews
+func (h *DriverHandler) GetDriverReviews(c *gin.Context) {
+	driverID := c.Param("id")
 
-// 	reviews, err := h.driverService.GetDriverReviews(driverID)
-// 	if err != nil {
-// 		response.Error(c, http.StatusInternalServerError, err.Error())
+	reviews, err := h.driverService.GetDriverReviews(driverID)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Reviews retrieved successfully", gin.H {
+		"driver_id" : driverID,
+		"reviews":    reviews,
+		"total":      len(reviews),
+	})
+}
+
+// // CreateReview // POST /api/reviews
+// func (h *DriverHandler) CreateReview(c *gin.Context) {
+// 	// Get user ID from auth middleware
+// 	userID := c.GetString("user_id")
+
+// 	var req models.CreateReviewRequest
+// 	if err := c.ShouldBindJSON(&req); err != nil {
+// 		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+// 		return
 // 	}
+
+// 	review, err := h.reviewServices.CreateReview(userID, &req)
+// 	if err != nil {
+// 		response.Error(c, http.StatusBadRequest, err.Error())
+// 		return
+// 	}
+
+// 	response.Success(c, http.StatusCreated, "Review created successfully", review)
 // }
+
