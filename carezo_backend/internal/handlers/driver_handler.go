@@ -152,23 +152,23 @@ func (h *DriverHandler) GetDriverReviews(c *gin.Context) {
 	})
 }
 
-// // CreateReview // POST /api/reviews
-// func (h *DriverHandler) CreateReview(c *gin.Context) {
-// 	// Get user ID from auth middleware
-// 	userID := c.GetString("user_id")
+// CreateReview // POST /api/reviews
+func (h *DriverHandler) CreateReview(c *gin.Context) {
+	// Get user ID from auth middleware
+	userID := c.GetString("user_id")
 
-// 	var req models.CreateReviewRequest
-// 	if err := c.ShouldBindJSON(&req); err != nil {
-// 		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
-// 		return
-// 	}
+	var req models.CreateReviewRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		return
+	}
 
-// 	review, err := h.reviewServices.CreateReview(userID, &req)
-// 	if err != nil {
-// 		response.Error(c, http.StatusBadRequest, err.Error())
-// 		return
-// 	}
+	review, err := h.reviewServices.CreateReview(userID, &req)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
 
-// 	response.Success(c, http.StatusCreated, "Review created successfully", review)
-// }
+	response.Success(c, http.StatusCreated, "Review created successfully", review)
+}
 
