@@ -64,6 +64,7 @@ func main() {
 	// handlers
 	authHandler := handlers.NewAuthHandler(cfg)
 	carHandler := handlers.NewCarHandler()
+	driverHandler := handlers.NewDriverHandler()
 
 	// routes
 	api := router.Group("/api") 
@@ -87,9 +88,34 @@ func main() {
 			cars.GET("/:id", carHandler.GetCar)               // GET /api/cars/{car_id}
 		}
 
-		// protected route
+
+		// Public driver routes (anyone can view drivers)
+		drivers := api.Group("/drivers")
+		{
+			drivers.GET("", driverHandler.ListAllDrivers)         // GET /api/drivers
+			drivers.GET("/search", driverHandler.SearchDrivers)   // GET /api/drivers/search
+			drivers.GET("/:id", driverHandler.GetDriver)          // GET /api/drivers/{id}
+			drivers.GET("/:id/reviews", driverHandler.GetDriverReviews) // GET /api/drivers/{id}/reviews
+		}
+
+		// Protected routes (user must be authenticated)
 		protected := api.Group("")
 		protected.Use(middleware.AuthMiddleware(cfg))
+		{
+			// Review routes (authenticated users only)
+			protected.POST("/reviews", driverHandler.CreateReview) // POST /api/reviews
+		}
+
+		// Admin routes (require admin role)
+		admin := protected.Group("/admin")
+		admin.Use(middleware.RequireRole("admin"))
+		{
+			// Driver management (admin only)
+			admin.POST("/drivers", driverHandler.CreateDriver)       
+			admin.PUT("/drivers/:id", driverHandler.UpdateDriver)   
+			admin.DELETE("/drivers/:id", driverHandler.DeleteDriver) 
+		}
+
 		{
 			// User Profile Routes
 			protected.GET("/me", func(c *gin.Context) {
