@@ -61,3 +61,59 @@ type Booking struct {
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
+
+
+type CreateBookingRequest struct {
+	CarID           uuid.UUID `json:"car_id"            binding:"required"`
+	DriverID        uuid.UUID `json:"driver_id"         binding:"required"`
+	PickupDate      time.Time `json:"pickup_date"       binding:"required"`
+	ReturnDate      time.Time `json:"return_date"       binding:"required"`
+	Destination     string    `json:"destination"       binding:"required"`
+	PickupLocation  *string   `json:"pickup_location"`  // optional
+	SpecialRequests *string   `json:"special_requests"` // optional
+}
+
+type CancelBookingRequest struct {
+	Reason string `json:"reason" binding:"required"`
+}
+
+type ListBookingsRequest struct {
+	Status string `form:"status"`  // optional – filter by booking status
+	Page   int    `form:"page"`
+	Limit  int    `form:"limit"`
+}
+
+type BookingResponse struct {
+	Booking
+	Car    *CarSummary    `json:"car,omitempty"`
+	Driver *DriverSummary `json:"driver,omitempty"`
+}
+
+type CarSummary struct {
+	ID           uuid.UUID `json:"id"`
+	Model        string    `json:"model"`
+	Brand        string    `json:"brand"`
+	Color        string    `json:"color"`
+	LicencePlate string    `json:"licence_plate"`
+}
+
+type DriverSummary struct {
+	ID              uuid.UUID `json:"id"`
+	FirstName       string    `json:"first_name"`
+	LastName        string    `json:"last_name"`
+	Gender          string    `json:"gender"`
+	AverageRating   float64   `json:"average_rating"`
+	ProfileImageURL *string   `json:"profile_image_url,omitempty"`
+}
+
+type PaginatedBookingsResponse struct {
+	Bookings []Booking `json:"bookings"`
+	// Meta     PaginationMeta `json:"meta"`
+}
+
+// type PaginationMeta struct {
+// 	Total      int `json:"total"`
+// 	Page       int `json:"page"`
+// 	Limit      int `json:"limit"`
+// 	TotalPages int `json:"total_pages"`
+// }
