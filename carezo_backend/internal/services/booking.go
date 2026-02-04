@@ -3,6 +3,7 @@ package services
 import (
 	"crypto/rand"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -14,18 +15,14 @@ import (
 	"github.com/google/uuid"
 )
 
-
-
-
 type BookingService struct{}
 
-func NewBookingService() * BookingService {
-	return  &BookingService{}
+func NewBookingService() *BookingService {
+	return &BookingService{}
 }
 
 const refCharset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 const refLength = 8
-
 
 func generateBookingReference() (string, error) {
 	b := make([]byte, refLength)
@@ -38,12 +35,11 @@ func generateBookingReference() (string, error) {
 		}
 		b[i] = refCharset[n.Int64()]
 	}
-	return "BK-" +string(b), nil
+	return "BK-" + string(b), nil
 }
 
-
 // CreateBooking
-func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingRequest)(*models.Booking, error) {
+func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingRequest) (*models.Booking, error) {
 	// validate date
 	now := time.Now()
 	if req.PickupDate.Before(now) {
@@ -70,7 +66,7 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 		return nil, errors.New("Car is currently marked as unavailable")
 	}
 
-	// fetch driver 
+	// fetch driver
 
 	var driver models.Driver
 	query = `SELECT * FROM drivers WHERE id = $1 AND deleted_at IS NULL`
@@ -125,10 +121,17 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	}
 
 	// calculate pricing
-	duration      := req.ReturnDate.Sub(req.PickupDate)
-	totalHours    := math.Ceil(duration.Hours())
-	tripCost      := car.HourlyRate  * totalHours
-	totalAmount   := tripCost + car.CautionFee
+	duration := req.ReturnDate.Sub(req.PickupDate)
+	totalHours := math.Ceil(duration.Hours())
+
+	var hourlyRate float64
+	if err := json.Unmarshal(car.HourlyRate, &hourlyRate); err != nil {
+		return nil, fmt.Errorf("Failed to convert hourly rate: %w", err)
+	}
+
+	tripCost := hourlyRate * totalHours
+	totalAmount := tripCost + car.CautionFee
+	refundableAmount := totalAmount 
 
 	// generate booking reference
 	ref, err := generateBookingReference()
@@ -136,34 +139,31 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 		return nil, err
 	}
 
-		// NOTE: total_hours is a GENERATED column in postgres – we do NOT insert it.
-		// We use RETURNING to get the full row back (including the computed total_hours).
+	bookingID := uuid.New().String()
 
-		bookingID := uuid.New().String()
-
-		query = `
-			INSERT INTO bookings (
-				id,
-				booking_reference
-				user_id,
-				car_id,
-				driver_id,
-				pickup_date,
-				return_date,
-				destination,
-				pickup_location,
-				hourly_rate,
-				caution_fee,
-				total_amount,
-				refundable_amount,
-				payment_status,
-				status,
-				special_requests 
-			) VALUES (
-			 $1, $2, $3, $4, $5,$6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
-			)
-			 RETURNING *
-		`
+	query = `
+        INSERT INTO bookings (
+            id,
+            booking_reference,
+            user_id,
+            car_id,
+            driver_id,
+            pickup_date,
+            return_date,
+            destination,
+            pickup_location,
+            hourly_rate,
+            caution_fee,
+            total_amount,
+            refundable_amount,
+            payment_status,
+            status,
+            special_requests 
+        ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
+        )
+        RETURNING *
+    `
 
 	var booking models.Booking
 	err = database.DB.Get(&booking, query,
@@ -176,13 +176,18 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 		req.ReturnDate,
 		req.Destination,
 		req.PickupLocation,
-		car.HourlyRate,
+		hourlyRate,
 		car.CautionFee,
 		totalAmount,
 		refundableAmount,
 		models.PaymentStatusPending,
 		models.BookingStatusPending,
 		req.SpecialRequests,
-		) 
+	)
 
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create booking: %w", err)
+	}
+
+	return &booking, nil
 }
