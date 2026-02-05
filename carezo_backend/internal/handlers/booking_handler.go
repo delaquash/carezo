@@ -20,7 +20,7 @@ func NewBookingHandler() *BookingHandler {
 	}
 }
 
-
+// POST /api/bookings
 func (h *BookingHandler) CreateBooking(c *gin.Context) {
 	// get auth user from jwt middleware
 	userID, exists := c.Get("user_id")
@@ -31,7 +31,15 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 	}
 
 	var req models.CreateBookingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid Request: " +err.Error())
+		return
+	}
 
-	
-	
+	booking, err := h.bookingService.CreateBooking(userID.(string), &req)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	response.Success(c, http.StatusCreated, "Booking created successfully", booking)
 }
