@@ -164,7 +164,7 @@ func (s *UserService) UpdateUserStatus(userID string, status string) error {
 	validateStatus := map[string]bool {
 		"active": true,
 		"inactive": true,
-		"suspended": true
+		"suspended": true,
 	}
 
 	if !validateStatus[status] {
@@ -191,4 +191,15 @@ func (s *UserService) UpdateUserStatus(userID string, status string) error {
 	return nil
 }
 
+// DeactivateAccount - soft delete user account
+
+func (s *UserService) DeactivateAccount(userID string) error {
+	query := `
+		UPDATE users
+		SET    deleted_at = CURRENT_TIMESTAMP,
+		       status     = 'inactive'
+		WHERE  id         = $1
+		  AND  deleted_at IS NULL
+	`
+}
 
