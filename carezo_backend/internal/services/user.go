@@ -51,12 +51,72 @@ func(s *UserService) GetUserByEmail(email string) (*models.User, error) {
 } 
 
 
-// // UpdateUserProfile
-// func (s *UserService) UpdateProfile(userID string, updates map[string]interface{})(*models.User, error){
-// 	// fetch user first
-// 	_,err := s.GetUserByID(userID)
+ // UpdateUserProfile
+func (s *UserService) UpdateProfile(userID string, updates map[string]interface{})(*models.User, error){
+	// fetch user first
+	_,err := s.GetUserByID(userID)
 
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// }
+	if err != nil {
+		return nil, err
+	}
+
+	// build update query
+	var setClauses []string
+	var args []interface{}
+	argCount := 1
+
+	// fields that can be updated
+	allowUpdateField := map[string]bool{
+		"first_name":   		true,
+		"last_name":    		true,
+		"phone_number": 		true,
+		"age":          		true,
+		"profession":   		true,
+		"location":     		true,
+		"profile_image_url":   	true,
+	}
+
+	for fields, value := range updates {
+		if !allowUpdateField[fields] {
+			// this skips fields not allowed to be updated
+			continue
+		}
+		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", fields, argCount))
+		args = append(args, value)
+		argCount++
+	}
+
+	if len(setClauses) == 0 {
+		return nil, errors.New("No valid fields to update")
+	}
+	// add userID as last arg
+	args = append(args, userID)
+
+	query := fmt.Sprintf(`
+		UPDATE users
+		SET %s
+		WHERE id    = $%d
+		AND deleted_at IS NULL
+		RETURNING *
+	`, fmt.Sprintf("%s", setClauses[0]), argCount)
+
+
+		// rebuild query with all SET clauses
+	if len(setClauses) > 1 {
+		query = fmt.Sprintf(`
+			UPDATE users
+			SET    %s
+			WHERE  id         = $%d
+			  AND  deleted_at IS NULL
+			RETURNING *
+		`, joinClauses(setClauses), argCount)
+	}
+
+	var updated models.User
+	err = database.DB.Get(&updated, query, args...)
+	if err != nil {
+		return  nil, fmt.Errorf("Failed to update profile: %w", err)
+	}
+
+	return &updated, nil
+}
