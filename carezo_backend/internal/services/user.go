@@ -120,3 +120,75 @@ func (s *UserService) UpdateProfile(userID string, updates map[string]interface{
 
 	return &updated, nil
 }
+
+// helper function to join SET clauses
+
+func joinClauses(clauses []string) string {
+	result := ""
+	for i, clause := range clauses {
+		if i > 0 {
+			result += ", "
+		}
+		result += clause
+	}
+
+	return result
+}
+
+// UpdateLastLogin at timestamp
+func(s *UserService) UpdateLastLogin(userID string) error {
+	query := `
+		UPDATE users
+		SET    last_login_at = CURRENT_TIMESTAMP
+		WHERE  id           =$1
+			AND deleted_at   IS NULL
+	`
+
+	result, err := database.DB.Exec(query, userID)
+	if err != nil {
+		return fmt.Errorf("Failed to update last login: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return errors.New("User not found")
+	}
+	return nil
+}
+
+
+// UpdateUserStatus by admin
+
+func (s *UserService) UpdateUserStatus(userID string, status string) error {
+	// validate status
+	validateStatus := map[string]bool {
+		"active": true,
+		"inactive": true,
+		"suspended": true
+	}
+
+	if !validateStatus[status] {
+		return errors.New("Invalid status. Must be: active, inactive, or suspended")
+	}
+
+	query := `
+		UPDATE users
+		SET      status  =$1
+		WHERE id  =$2
+			AND deleted_at IS NULL	
+	`
+
+	result, err := database.DB.Exec(query, status, userID)
+	if err != nil {
+		return fmt.Errorf("Failed to update user status: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+
+	if rows == 0 {
+		return errors.New("User not found")
+	}
+	return nil
+}
+
+
