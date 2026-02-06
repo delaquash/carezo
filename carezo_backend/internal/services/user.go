@@ -34,21 +34,21 @@ func (s *UserService) GetUserByID(userID string)(*models.User, error) {
 }
 
 
-// // GetUserByEmail
+// GetUserByEmail
 
-// func(s *UserService) GetUserByEmail(email string) (*models.User, error) {
-// 	var user models.User
+func(s *UserService) GetUserByEmail(email string) (*models.User, error) {
+	var user models.User
 
-// 	query := `SELECT * FROM users WHERE email =$1 AND deleted_at IS NULL`
-// 	err := database.DB.Get(&query, email, user)
-// 	if err != nil {
-// 		if err == sql.ErrNoRows {
-// 			return nil, errors.New("User not found")
-// 		}
-// 		return nil, fmt.Errorf("Database error: %w", err)
-// 	}
-// 	return &user, nil
-// } 
+	query := `SELECT * FROM users WHERE email =$1 AND deleted_at IS NULL`
+	err := database.DB.Get(&query, email, user)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("User not found")
+		}
+		return nil, fmt.Errorf("Database error: %w", err)
+	}
+	return &user, nil
+} 
 
 
 // // UpdateUserProfile
