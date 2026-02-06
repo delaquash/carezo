@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-
 	models "github.com/delaquash/carezo/internal/model"
 	"github.com/delaquash/carezo/internal/services"
 	response "github.com/delaquash/carezo/pkg"
