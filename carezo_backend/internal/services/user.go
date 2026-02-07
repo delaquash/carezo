@@ -201,5 +201,82 @@ func (s *UserService) DeactivateAccount(userID string) error {
 		WHERE  id         = $1
 		  AND  deleted_at IS NULL
 	`
+
+	result, err := database.DB.Exec(query, userID)
+	if err != nil {
+		return fmt.Errorf("Failed to deactivate account: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return errors.New("User not found")
+	}
+	return nil
 }
+
+
+func (s *UserService) GetAllUsers(status string, role string, page, limit int) ([]models.User, int, error) {
+	
+	// pagination defaults
+	if page < 1  { page = 1 }
+	if limit < 1 { limit = 10 }
+	if limit > 20 { limit = 20 }
+
+	// build WHERE clause
+	var conditions []string
+	var args []interface{}
+	argCount := 1
+
+	// exclude deleted users
+	conditions = append(conditions, "deleted_at IS NULL")
+
+	if status != "" {
+		conditions = append(conditions, fmt.Sprintf("status = $%d", argCount))
+		args = append(args, status)
+		argCount++
+	}
+
+	if role != "" {
+		conditions = append(conditions, fmt.Sprintf("role = $%d", argCount))
+		args = append(args, role)
+		argCount++
+	}
+
+	// count total
+	countQuery := "SELECT COUNT(*) FROM users WHERE "
+	for i, cond := range conditions {
+		if i > 0 {
+			countQuery += " AND "
+		}
+		countQuery += cond
+	}
+
+	var total int
+	err := database.DB.Get(&total, countQuery, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("Database error counting users: %w", err)
+	}
+
+	// fetch page
+	offset := (page - 1) * limit
+
+	dataQuery := "SELECT * FROM users WHERE "
+	for i, cond := range conditions {
+		if i > 0 {
+			dataQuery += " AND "
+		}
+		dataQuery += cond
+	}
+	dataQuery += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", argCount, argCount+1)
+	args = append(args, limit, offset)
+
+	var users []models.User
+	err = database.DB.Select(&users, dataQuery, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("Database error fetching users: %w", err)
+	}
+
+	return users, total, nil
+}
+
 
