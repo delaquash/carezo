@@ -28,5 +28,11 @@ func (h *UserHandler) GetMe(c *gin.Context) {
 		return
 	}
 
-	
+	user, err := h.userService.GetUserByID(userID.(string))
+	if err != nil {
+		response.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "User profile retrieved successfully", user)
 }
