@@ -102,36 +102,6 @@ func (s *AuthService) VerifyOTP(req *models.VerifyOTPRequest) error {
 	return nil
 }
 
-// CompleteProfile completes user registration after OTP verification
-func (s *AuthService) CompleteProfile(email string, req *models.CompleteProfileRequest) error {
-	// Update user profile with complete information
-	query := `
-		UPDATE users 
-		SET first_name = $1, last_name = $2, phone_number = $3, age = $4, profession = $5, location = $6
-		WHERE email = $7 AND email_verified = true AND deleted_at IS NULL
-	`
-	result, err := database.DB.Exec(
-		query,
-		req.FirstName,
-		req.LastName,
-		req.PhoneNumber, // Now optional
-		req.Age,
-		req.Profession,
-		req.Location,
-		email,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to update profile: %w", err)
-	}
-
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return errors.New("user not found or email not verified")
-	}
-
-	return nil
-}
-
 // Login authenticates user with email and password
 func (s *AuthService) Login(req *models.LoginRequest) (*models.AuthResponse, error) {
 	// 1. Find user by email

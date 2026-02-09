@@ -50,6 +50,59 @@ func(s *UserService) GetUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 } 
 
+// CompleteProfile completes user registration after OTP verification
+func (s *UserService) CompleteProfile(userID string, req *models.CompleteProfileRequest) (*models.User, error) {
+	// this is to fetch the user
+
+	user, err := s.GetUserByID(userID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// check if user email is verified
+	if !user.EmailVerified {
+		return nil, errors.New("Email must be verified before completing profile")
+	}
+	// check if profile already completed
+
+	if user.FirstName != "" && user.LastName != "" {
+		return nil, errors.New("Profile already completed")
+	}
+
+	// Update user profile with complete information
+	query := `
+		UPDATE users
+		SET    first_name = $1,
+			   last_name  = $2,
+			   phone_number = $3,
+			   age = $4,
+			   profession = $5,
+			   location = $6,
+			   profile_image_url = $7
+		WHERE  id         = $8
+		  AND  deleted_at IS NULL
+		RETURNING *
+	`
+
+	var completeUpdate models.User
+	err = database.DB.Get(&completeUpdate, query,
+		req.FirstName,
+		req.LastName,
+		req.PhoneNumber,
+		req.Age,
+		req.Profession,
+		req.Location,
+		req.ProfileImageURL,
+		userID,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("Failed to complete profile: %w", err)
+	}
+
+	return &completeUpdate, nil
+}
 
  // UpdateUserProfile
 func (s *UserService) UpdateProfile(userID string, updates map[string]interface{})(*models.User, error){

@@ -61,10 +61,11 @@ type VerifyOTPRequest struct {
 type CompleteProfileRequest struct {
 	FirstName   string  `json:"first_name" binding:"required"`
 	LastName    string  `json:"last_name" binding:"required"`
-	PhoneNumber *string `json:"phone_number,omitempty"` // Now optional
+	PhoneNumber *string `json:"phone_number,omitempty"` 
 	Age         int     `json:"age" binding:"required,min=18,max=120"`
 	Profession  *string `json:"profession,omitempty"`
 	Location    *string `json:"location,omitempty"`
+	ProfileImageURL *string `json:"profile_image_url,omitempty"`
 }
 
 // LoginRequest

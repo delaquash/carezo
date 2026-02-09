@@ -62,30 +62,6 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 }
 
 
-// POST /api/auth/complete-profile?email=user@example.com
-// Body: {"first_name": "John", "last_name": "Doe", "age": 28, ...}
-func (h *AuthHandler) CompleteProfile(c *gin.Context) {
-	// Get email from query parameter
-	email := c.Query("email")
-	if email == "" {
-		response.Error(c, http.StatusBadRequest, "Email is required")
-		return
-	}
-
-	var req models.CompleteProfileRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
-		return
-	}
-
-	err := h.authService.CompleteProfile(email, &req)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	response.Success(c, http.StatusOK, "Profile completed successfully. You can now login.", nil)
-}
 
 // POST /api/auth/login
 // Body: {"email": "user@example.com", "password": "SecurePass123!"}
