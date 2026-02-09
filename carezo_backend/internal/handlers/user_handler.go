@@ -139,3 +139,56 @@ func (h *UserHandler) DeleteAccount(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Account deactivated successfully", nil)
 
 }
+
+
+
+// Admin-only endpoints
+
+// GET  /api/admin/get-all-users
+//    ?status=active&role=user&page=1&limit=10
+
+type ListUsersRequest struct {
+	Status  string `form:"status"`
+	Role    string `form:"role"`
+	Page    int    `form:"page,default=1"`
+	Limit   int    `form:"limit,default=10"`
+}
+
+func (h *UserHandler) ListAllUsers(c *gin.Context) {
+	var req ListUsersRequest
+
+	if err := c.ShouldBindQuery(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid query params: "+err.Error())
+		return
+	}
+
+	// default query params
+	if req.Page < 1 { req.Page = 1 }
+	if req.Limit < 1 { req.Limit = 10 }
+	if req.Limit > 20 { req.Limit = 20 }
+
+	users, total, err := h.userService.GetAllUsers(req.Status, req.Role, req.Page, req.Limit)
+
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// calculate total pages
+
+	totalPages := total / req.Limit
+
+	if total % req.Limit != 0 {
+		totalPages++
+	}
+
+	response.Success(c, http.StatusOK, "Users retrieved successfully", gin.H {
+		"users": users,
+		"meta": gin.H {
+			"total": total,
+			"page": req.Page,
+			"limit": req.Limit,
+			"total_pages": totalPages,
+		},
+	})
+}
