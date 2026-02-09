@@ -192,3 +192,48 @@ func (h *UserHandler) ListAllUsers(c *gin.Context) {
 		},
 	})
 }
+
+// GET  /api/admin/users/:id --- get user by id
+
+func (h *UserHandler) GetUserByID(c *gin.Context) {
+	userID  := c.Param("id")
+
+	user, err := h.userService.GetUserByID(userID)
+
+	if err != nil {
+		response.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "User retrieved successfully", user)
+}
+
+// PUS  /api/admin/users/:id/status
+// Thois is to update user status (active, inactive, suspended) by admin
+
+
+type UpdateUserStatusRequest struct {
+	Status string `json:"status" binding:"required"`
+}
+
+func (h *UserHandler) UpdateUserStatus(c *gin.Context) {
+	userID := c.Param("id")
+
+	var req UpdateUserStatusRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request: "+err.Error())
+		return
+	}
+
+	err := h.userService.UpdateUserStatus(userID, req.Status)
+
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	
+	response.Success(c, http.StatusOK, "User status updated successfully", nil)
+}
+
+
