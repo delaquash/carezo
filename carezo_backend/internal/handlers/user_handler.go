@@ -47,14 +47,14 @@ func (h *UserHandler) CompleteUserProfile(c *gin.Context) {
 		return
 	}
 
-	var reg models.CompleteProfileRequest
+	var req models.CompleteProfileRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "Invalid request: "+err.Error())
 		return
 	}
 
-	user, err := h.userService.CompleteProfile()(userID, (string), &req)
+	user, err := h.userService.CompleteProfile(userID.(string), &req)
 
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
@@ -62,4 +62,30 @@ func (h *UserHandler) CompleteUserProfile(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "Profile Completed successfully", user)
+}
+
+func (h *UserHandler) UpdateProfile(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// bind json into a map to handle partial update
+	var updates map[string]interface{}
+
+	if err := c.ShouldBindJSON(&updates); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid Request: "+err.Error())
+		return
+	}
+
+	user, err  := h.userService.UpdateProfile(userID.(string), updates)
+
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Profile Updated Successfully", user)
 }
