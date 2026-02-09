@@ -65,6 +65,8 @@ func main() {
 	authHandler := handlers.NewAuthHandler(cfg)
 	carHandler := handlers.NewCarHandler()
 	driverHandler := handlers.NewDriverHandler()
+	userHandler := handlers.UserHandler()
+	bookingHandler := handlers.BookingHandler()
 
 	// routes
 	api := router.Group("/api") 
