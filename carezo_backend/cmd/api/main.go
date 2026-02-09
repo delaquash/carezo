@@ -104,6 +104,15 @@ func main() {
 		protected := api.Group("")
 		protected.Use(middleware.AuthMiddleware(cfg))
 		{
+
+			user := protected.Group("/user")
+			{
+				user.GET("/get-profile", userHandler.GetMe)
+				user.PUT("/update-profile", userHandler.UpdateProfile)
+				user.PUT("/complete-profile", userHandler.CompleteUserProfile)
+				user.PUT("/change-password", userHandler.ChangePassword)
+				user.DELETE("/delete-user", userHandler.DeactivateAcount)
+			}
 			// Review routes (authenticated users only)
 			protected.POST("/reviews", driverHandler.CreateReview) // POST /api/reviews
 		}
@@ -112,10 +121,24 @@ func main() {
 		admin := protected.Group("/admin")
 		admin.Use(middleware.RequireRole("admin"))
 		{
-			// Driver management (admin only)
+			// Car management (admin only)
+			admin.POST("/cars", carHandler.CreateCar)	  
+			admin.PUT("/cars/:id", carHandler.UpdateCar)   
+			admin.DELETE("/cars/:id", carHandler.DeleteCar) 
+				// Driver management (admin only)
 			admin.POST("/drivers", driverHandler.CreateDriver)       
 			admin.PUT("/drivers/:id", driverHandler.UpdateDriver)   
 			admin.DELETE("/drivers/:id", driverHandler.DeleteDriver) 
+
+
+			// User management (admin only)
+			adminUsers := admin.Group("/users")
+			{
+				adminUsers.GET("", userHandler.ListUsers) 
+				adminUsers.PUT("/:id/status", userHandler.UpdateUserStatus) 
+				adminUsers.GET("/get-user/:id", userHandler.GetUserByID)  
+			}
+		
 		}
 
 		{
