@@ -65,8 +65,8 @@ func main() {
 	authHandler := handlers.NewAuthHandler(cfg)
 	carHandler := handlers.NewCarHandler()
 	driverHandler := handlers.NewDriverHandler()
-	userHandler := handlers.UserHandler()
-	bookingHandler := handlers.BookingHandler()
+	userHandler := handlers.NewUserHandler()
+	bookingHandler := handlers.NewBookingHandler()
 
 	// routes
 	api := router.Group("/api") 
@@ -110,9 +110,17 @@ func main() {
 				user.GET("/get-profile", userHandler.GetMe)
 				user.PUT("/update-profile", userHandler.UpdateProfile)
 				user.PUT("/complete-profile", userHandler.CompleteUserProfile)
-				user.PUT("/change-password", userHandler.ChangePassword)
-				user.DELETE("/delete-user", userHandler.DeactivateAcount)
+				// user.PUT("/change-password", userHandler.ChangePassword)
+				user.DELETE("/delete-user", userHandler.DeleteAccount)
 			}
+				bookings := protected.Group("/bookings")
+			{
+				bookings.POST("", bookingHandler.CreateBooking)           
+				bookings.GET("", bookingHandler.ListUserBooking)         
+				bookings.GET("/:id", bookingHandler.GetBooking)          
+				bookings.POST("/:id/cancel", bookingHandler.CancelBooking) 
+			}
+
 			// Review routes (authenticated users only)
 			protected.POST("/reviews", driverHandler.CreateReview) // POST /api/reviews
 		}
@@ -134,7 +142,7 @@ func main() {
 			// User management (admin only)
 			adminUsers := admin.Group("/users")
 			{
-				adminUsers.GET("", userHandler.ListUsers) 
+				adminUsers.GET("", userHandler.ListAllUsers) 
 				adminUsers.PUT("/:id/status", userHandler.UpdateUserStatus) 
 				adminUsers.GET("/get-user/:id", userHandler.GetUserByID)  
 			}

@@ -7,12 +7,16 @@ import (
 
 	"github.com/delaquash/carezo/internal/database"
 	models "github.com/delaquash/carezo/internal/model"
+	"github.com/jmoiron/sqlx"
 )
 
-type UserService struct{}
 
-func NewUserService() *UserService {
-	return &UserService{}
+type UserService struct {
+    db *sqlx.DB
+}
+
+func NewUserService(db *sqlx.DB) *UserService {
+    return &UserService{db: db}
 }
 
 
