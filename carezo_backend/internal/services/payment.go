@@ -153,3 +153,99 @@ func (s *PaymentService) InitializePayment(bookingID string, userEmail string)(*
 	}, nil
 }
 	
+
+// This is to verify payment
+func (s *PaymentService) VerifyPayment(reference string) error {
+	// call paystack verify endpoint
+	url := s.paystackBaseURL + "/transaction/verify/" + reference
+
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		return fmt.Errorf("Failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+s.paystackSecretKey)
+	client := &http.Client{Timeout: 30 * time.Second}
+
+	response, err := client.Do(req)
+
+	if err != nil {
+		return fmt.Errorf("Failed to verify payment: %w", err)
+	}
+
+	defer response.Body.Close()
+
+	body, err := io.ReadAll(response.Body)
+
+	if err != nil {
+		return fmt.Errorf("Failed to read response: %w", err)
+	}
+
+	var paystackResp PaystackVerifyResponse
+
+	if err := json.Unmarshal(body, &paystackResp); err != nil {
+		return fmt.Errorf("Failed to parse Paystack response: %w", err)
+	}
+
+	if !paystackResp.Status {
+		return fmt.Errorf("Paystack error: %w", paystackResp.Message)
+	}
+
+	// check if payment was successfull
+	if paystackResp.Data.Status != "success" {
+		return fmt.Errorf("Payment wasnt successfull. Status of payment: %w", paystackResp.Data.Status)
+	}
+
+	// find the booking
+	booking, err := s.bookingService.GetBookingPaymentReference(reference)
+
+	if err != nil {
+		return err
+	}
+
+	// verify that amount matches
+	expectedAmountInKobo := int(booking.TotalAmount * 100)
+
+	if paystackResp.Data.Amount != expectedAmountInKobo {
+		return fmt.Errorf("Payment amount mismatch. Expected: %d kobo, Got: %d kobo", expectedAmountInKobo, paystackResp.Data.Amount)
+	}
+
+	// parse paid_at timestamp
+	paidAt, err := time.Parse(time.RFC3339, paystackResp.Data.PaidAt)
+
+	if err != nil {
+		// use current time if parsing fails
+		paidAt = time.Now()
+	}
+
+	// Update booking payment status\
+	updateQuery := `
+		UPDATE  bookings
+		SET     payment_Status   = $1,
+				paid_at			 = $2
+				status			 = CASE
+									  WHEN status = "pending" THEN "confirmed"
+									  ELSE status
+									END
+		WHERE id 				=  $3
+	`
+
+		result, err := database.DB.Exec(updateQuery,
+		models.PaymentStatusPaid,
+		paidAt,
+		booking.ID,
+
+	)
+
+	if err != nil {
+		return fmt.Errorf("Failed to update booking payment status: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return  errors.New("Booking not found")
+	}
+	return nil
+
+}
