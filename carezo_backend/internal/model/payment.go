@@ -8,9 +8,9 @@ type PaymentInitializeRequest struct {
 }
 
 type PaymentInitializeResponse struct {
-	PaymentURL string `json:"payment_url"`
-	AccessCode string `json:"access_code"`
-	Reference  string `json:"reference"`
+	AuthorizationURL 	string `json:"payment_url"`
+	AccessCode 			string `json:"access_code"`
+	Reference  			string `json:"reference"`
 }
 
 

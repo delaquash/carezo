@@ -12,31 +12,31 @@ type Car struct {
 	LicencePlate			string	`json:"licence_plate" db:"license_plate"`
 
 
-	EngineOutput     	   *string `json:"engine_output,omitempty" db:"engine_output"` 
+	EngineOutput     	   *string 	 `json:"engine_output,omitempty" db:"engine_output"` 
 	Transmission			string	 `json:"transmission" db:"transmission"`
 	FuelType				string   `json:"fuel_type" db:"fuel_type"`
 	SeatingCapacity 		int      `json:"seating_capacity" db:"seating_capacity"`
 	MaximumSpeed   		   *int      `json:"maximum_speed,omitempty" db:"maximum_speed"`
-	Mileage         		int     `json:"mileage" db:"mileage"`                           // total kilometers driven
+	Mileage         		int      `json:"mileage" db:"mileage"`                          
 
-	DriverName   			*string `json:"driver_name,omitempty" db:"driver_name"`     
-	DriverNumber 			*string `json:"driver_number,omitempty" db:"driver_number"` 
-	DriverMiles  			*int    `json:"driver_miles,omitempty" db:"driver_miles"`   
+	DriverName   			*string  `json:"driver_name,omitempty" db:"driver_name"`     
+	DriverNumber 			*string  `json:"driver_number,omitempty" db:"driver_number"` 
+	DriverMiles  			*int     `json:"driver_miles,omitempty" db:"driver_miles"`   
 
 	HourlyRate   			JSONB    `json:"hourly_rate" db:"hourly_rate"` 
 	CautionFee   			float64  `json:"caution_fee" db:"caution_fee"`
 
-	Features  			JSONB    `json:"features" db:"features"`
+	Features  				JSONB    `json:"features" db:"features"`
 
 	Images       			JSONB     `json:"images" db:"images"`
 
 	IsAvailable  			bool      `json:"is_available" db:"is_available"`
 	Status       			string    `json:"status" db:"status"`
-	CurrentLocation 	   *string    `json:"current_location, omitempty" db:"current_location"`
+	CurrentLocation 	   *string    `json:"current_location,omitempty" db:"current_location"`
 
 	CreatedAt 				time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt 				time.Time  `json:"updated_at" db:"updated_at"`
-	DeletedAt 			   *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
+	DeletedAt 			   *time.Time  `json:"deleted_at,omitempty" db:"deleted_at"`
 }
 
 type JSONB map[string]interface{}

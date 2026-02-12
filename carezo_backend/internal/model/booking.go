@@ -18,6 +18,7 @@ const (
 	PaymentStatusCompleted = "completed"
 	PaymentStatusFailed    = "failed"
 	PaymentStatusRefunded  = "refunded"
+	PaymentStatusPaid = "paid"
 )
 
 type Booking struct {

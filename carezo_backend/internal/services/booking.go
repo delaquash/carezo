@@ -120,18 +120,12 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 		return nil, errors.New("Driver is not available for the selected dates")
 	}
 
-	// calculate pricing
-	duration := req.ReturnDate.Sub(req.PickupDate)
-	totalHours := math.Ceil(duration.Hours())
-
-	var hourlyRate float64
-	if err := json.Unmarshal(car.HourlyRate, &hourlyRate); err != nil {
-		return nil, fmt.Errorf("Failed to convert hourly rate: %w", err)
-	}
-
-	tripCost := hourlyRate * totalHours
-	totalAmount := tripCost + car.CautionFee
-	refundableAmount := totalAmount 
+	 // calculate pricing
+	duration         := req.ReturnDate.Sub(req.PickupDate)
+	totalHours       := math.Ceil(duration.Hours()) // partial hours round up
+	tripCost         := car.HourlyRate * totalHours
+	totalAmount      := tripCost + car.CautionFee
+	refundableAmount := car.CautionFee // caution fee is refundable on completion
 
 	// generate booking reference
 	ref, err := generateBookingReference()
@@ -209,7 +203,7 @@ func(s *BookingService) GetBookingByID(bookingID string) (*models.Booking, error
 }
 
 // GetUserBooking
-func (s *BookingService) GetUserBookings(userID string, status string page, limit int)([]models.Booking, int, error) {
+func (s *BookingService) GetUserBookings(userID string, status string, page, limit int)([]models.Booking, int, error) {
 	// default pagination
 	if page < 1  { page = 1 }
 	if limit < 1 { limit = 10 }
