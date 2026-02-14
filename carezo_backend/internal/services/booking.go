@@ -3,7 +3,6 @@ package services
 import (
 	"crypto/rand"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -299,4 +298,47 @@ func (s *BookingService) CancelBooking(bookingID string, userID string, reason s
 	// new feature:- send cancellation email
 
 	return nil
+}
+
+
+// Called during payment initialization to save the Paystack
+// reference string into the booking row so we can find it later.
+
+func (s *BookingService) StorePaymentReference(bookingID string, reference string) error {
+	query := `
+		UPDATE bookings
+		SET	   payment_reference = $1
+		WHERE  id 				 = $2	
+	`
+
+	result, err := database.DB.Exec(query, reference, bookingID)
+	if err != nil {
+		return fmt.Errorf("Failed to store payment reference: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+
+	if rows == 0 {
+		return errors.New("Booking not found")
+	}
+	return nil
+}
+
+
+// Called during payment verification to find the booking
+// using the Paystack reference string.
+
+func(s *BookingService) GetBookingByPaymentReference(reference string) (*models.Booking, error) {
+	var booking models.Booking
+
+	query := `SELECT * FROM bookings WHERE payment_reference = $1`
+	err := database.DB.Get(&booking, query, reference)
+
+	if err != nil {
+		if err == sql.ErrNoRows{
+			return nil, errors.New("Booking not found for this payment reference")
+		}
+		return nil, fmt.Errorf("Database error: %w", err)
+	}
+	return &booking, nil
 }

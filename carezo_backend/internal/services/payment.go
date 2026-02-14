@@ -125,19 +125,19 @@ func (s *PaymentService) InitializePayment(bookingID string, userEmail string)(*
 		return nil, fmt.Errorf("Failed to read response: %w", err)
 	}
 
-	var paystackRep PaystackInitializeResponse
+	var paystackResp PaystackInitializeResponse
 
-	if err := json.Unmarshal(body, &paystackRep);  err != nil {
+	if err := json.Unmarshal(body, &paystackResp);  err != nil {
 		return nil, fmt.Errorf("Failed to parse Paystack response: %w", err)
 	}
 
-	if !paystackRep.Status {
-		return nil, fmt.Errorf("Paystack error: %s", paystackRep.Message)
+	if !paystackResp.Status {
+		return nil, fmt.Errorf("Paystack error: %s", paystackResp.Message)
 	}
 
 
 	// store payment reference in the booking so that it can be used during verification
-	err = s.bookingService.StorePaymentReference(bookingID, paystackRep.Data.Reference)
+	err = s.bookingService.StorePaymentReference(bookingID, paystackResp.Data.Reference)
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to store payment reference: %w", err)
@@ -147,9 +147,9 @@ func (s *PaymentService) InitializePayment(bookingID string, userEmail string)(*
 	// return payment url and reference
 
 	return &models.PaymentInitializeResponse{	
-		AuthorizationURL: paystackRep.Data.AuthorizationURL,
-		AccessCode: paystackRep.Data.AccessCode,
-		Reference: paystackRep.Data.Reference,
+		AuthorizationURL: paystackResp.Data.AuthorizationURL,
+		AccessCode: paystackResp.Data.AccessCode,
+		Reference: paystackResp.Data.Reference,
 	}, nil
 }
 	
@@ -198,7 +198,7 @@ func (s *PaymentService) VerifyPayment(reference string) error {
 	}
 
 	// find the booking
-	booking, err := s.bookingService.GetBookingPaymentReference(reference)
+	booking, err := s.bookingService.GetBookingByPaymentReference(reference)
 
 	if err != nil {
 		return err
