@@ -120,19 +120,29 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 		return nil, errors.New("Driver is not available for the selected dates")
 	}
 
-	var hourlyRate models.HourlyRate
-	if err := json.Unmarshal(car.HourlyRate, &hourlyRate); err != nil {
-		return nil, fmt.Errorf("Failed to parse car hourly rate: %w", err)
-	}
+	// var hourlyRate models.HourlyRate
+	// if err := json.Unmarshal(car.HourlyRate, &hourlyRate); err != nil {
+	// 	return nil, fmt.Errorf("Failed to parse car hourly rate: %w", err)
+	// }
 
 	var rateToUse float64
 	switch req.PickupDate.Weekday() {
 	case time.Saturday, time.Sunday:
-		rateToUse = hourlyRate.Weekend  // weekend rate
+	// weekend rate
+		if val, ok := car.HourlyRate["weekend"]; ok {
+			rateToUse = val.(float64)
+		}
 	default:
-		rateToUse = hourlyRate.Standard  // weekday rate
+		// weekday rate
+		if val, ok := car.HourlyRate["weekday"]; ok {
+			rateToUse = val.(float64)
+		}
 	}
 
+	// safety check 
+	if rateToUse == 0 {
+		return nil, errors.New("Car hourly rate is not configured correctly")
+	}
 	 // calculate pricing
 	duration         := req.ReturnDate.Sub(req.PickupDate)
 	totalHours       := math.Ceil(duration.Hours()) // partial hours round up
