@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/delaquash/carezo/internal/database"
 	models "github.com/delaquash/carezo/internal/model"
 	"github.com/delaquash/carezo/internal/services"
 	response "github.com/delaquash/carezo/pkg"
@@ -16,7 +17,7 @@ type UserHandler struct {
 
 func NewUserHandler() *UserHandler {
 	return &UserHandler{
-		userService: services.NewUserService(),
+		userService: services.NewUserService(database.DB),
 	}
 }
 
