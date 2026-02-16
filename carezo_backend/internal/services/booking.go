@@ -3,6 +3,7 @@ package services
 import (
 	"crypto/rand"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -119,10 +120,23 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 		return nil, errors.New("Driver is not available for the selected dates")
 	}
 
+	var hourlyRate models.HourlyRate
+	if err := json.Unmarshal(car.HourlyRate, &hourlyRate); err != nil {
+		return nil, fmt.Errorf("Failed to parse car hourly rate: %w", err)
+	}
+
+	var rateToUse float64
+	switch req.PickupDate.Weekday() {
+	case time.Saturday, time.Sunday:
+		rateToUse = hourlyRate.Weekend  // weekend rate
+	default:
+		rateToUse = hourlyRate.Standard  // weekday rate
+	}
+
 	 // calculate pricing
 	duration         := req.ReturnDate.Sub(req.PickupDate)
 	totalHours       := math.Ceil(duration.Hours()) // partial hours round up
-	tripCost         := car.HourlyRate * totalHours
+	tripCost         := rateToUse * totalHours
 	totalAmount      := tripCost + car.CautionFee
 	refundableAmount := car.CautionFee // caution fee is refundable on completion
 
@@ -131,7 +145,7 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	if err != nil {
 		return nil, err
 	}
-
+	// create booking 
 	bookingID := uuid.New().String()
 
 	query = `
