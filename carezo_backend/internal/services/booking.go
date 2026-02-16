@@ -3,7 +3,6 @@ package services
 import (
 	"crypto/rand"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -120,10 +119,6 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 		return nil, errors.New("Driver is not available for the selected dates")
 	}
 
-	// var hourlyRate models.HourlyRate
-	// if err := json.Unmarshal(car.HourlyRate, &hourlyRate); err != nil {
-	// 	return nil, fmt.Errorf("Failed to parse car hourly rate: %w", err)
-	// }
 
 	var rateToUse float64
 	switch req.PickupDate.Weekday() {
@@ -193,7 +188,7 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 		req.ReturnDate,
 		req.Destination,
 		req.PickupLocation,
-		hourlyRate,
+		rateToUse,
 		car.CautionFee,
 		totalAmount,
 		refundableAmount,
