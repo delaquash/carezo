@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"time"
 
@@ -205,7 +206,7 @@ func (s *PaymentService) VerifyPayment(reference string) error {
 	}
 
 	// verify that amount matches
-	expectedAmountInKobo := int(booking.TotalAmount * 100)
+	expectedAmountInKobo := int64(math.Round(booking.TotalAmount * 100))
 
 	if paystackResp.Data.Amount != expectedAmountInKobo {
 		return fmt.Errorf("Payment amount mismatch. Expected: %d kobo, Got: %d kobo", expectedAmountInKobo, paystackResp.Data.Amount)
