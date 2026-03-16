@@ -61,6 +61,9 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Email verified successfully. Please complete your profile.", nil)
 }
 
+// POST /api/auth/resend-otp
+func (h *AuthHandler) ResendOTP(c *gin.Context) {}
+
 
 
 // POST /api/auth/login

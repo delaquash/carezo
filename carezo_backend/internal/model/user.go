@@ -57,6 +57,10 @@ type VerifyOTPRequest struct {
 	OTP   string `json:"otp" binding:"required,len=6"`
 }
 
+type ResendOTPRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
 // CompleteProfileRequest 
 type CompleteProfileRequest struct {
 	FirstName   string  `json:"first_name" binding:"required"`

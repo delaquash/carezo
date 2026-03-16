@@ -102,6 +102,42 @@ func (s *AuthService) VerifyOTP(req *models.VerifyOTPRequest) error {
 	return nil
 }
 
+// resend otp to user's email 
+func (s *AuthService) ResendOTP(req *models.ResendOTPRequest) (*models.AuthResponse, error){
+	// 1. Check if user exists and is not verified
+	var user models.User
+	query := `SELECT * FROM user WHERE email = $1 AND deleted_at IS NULL`
+	err := database.DB.Get(&user, query, req.Email)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("user not found")
+		}
+		return nil, fmt.Errorf("database error: %w", err)
+	}
+
+	// Dont resend if user is verified
+	if user.EmailVerified {
+		return nil, errors.New("email is already verified")
+	}
+
+	// Generate new OTp
+	otp, err := s.otpService.GenerateAndStoreOTP(req.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	// Send OTP via email
+	err = s.emailService.SendOTPEmail(req.Email, otp)
+	if err != nil {
+		fmt.Printf("Warning: Failed to send OTP email: %v\n", err)
+		return nil, fmt.Errorf("failed to resend verification email: %w", err)
+	}
+	
+	fmt.Printf("OTP resent to %s: %s\n", req.Email, otp)
+	return nil, err
+}
+
 // Login authenticates user with email and password
 func (s *AuthService) Login(req *models.LoginRequest) (*models.AuthResponse, error) {
 	// 1. Find user by email
