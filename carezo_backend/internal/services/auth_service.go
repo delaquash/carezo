@@ -80,28 +80,54 @@ func (s *AuthService) Register(req *models.RegisterRequest) error {
 }
 
 // VerifyOTP verifies the OTP code sent to user's email
-func (s *AuthService) VerifyOTP(req *models.VerifyOTPRequest) error {
+// Update this in internal/services/auth_service.go
+
+// VerifyOTP verifies the OTP code and logs user in
+func (s *AuthService) VerifyOTP(req *models.VerifyOTPRequest) (*models.AuthResponse, error) {
 	// 1. Verify OTP from Redis
 	valid, err := s.otpService.VerifyOTP(req.Email, req.OTP)
 	if err != nil || !valid {
-		return errors.New("invalid or expired OTP")
+		return nil, errors.New("invalid or expired OTP")
 	}
 
-	// 2. Mark email as verified in database
-	query := `UPDATE users SET email_verified = true WHERE email = $1 AND deleted_at IS NULL`
-	result, err := database.DB.Exec(query, req.Email)
+	// 2. Mark email as verified and get user
+	var user models.User
+	query := `
+		UPDATE users 
+		SET email_verified = true 
+		WHERE email = $1 AND deleted_at IS NULL
+		RETURNING *
+	`
+	err = database.DB.Get(&user, query, req.Email)
 	if err != nil {
-		return fmt.Errorf("failed to verify email: %w", err)
+		if err == sql.ErrNoRows {
+			return nil, errors.New("user not found")
+		}
+		return nil, fmt.Errorf("failed to verify email: %w", err)
 	}
 
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return errors.New("user not found")
+	// 3. Generate JWT tokens (auto-login)
+	accessToken, err := utils.GenerateAccessToken(user.ID, user.Email, user.Role, s.cfg)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	refreshToken, err := utils.GenerateRefreshToken(user.ID, s.cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. Update last login time
+	query = `UPDATE users SET last_login_at = $1 WHERE id = $2`
+	database.DB.Exec(query, time.Now(), user.ID)
+
+	// 5. Return auth response with token
+	return &models.AuthResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		User:         &user,
+	}, nil
 }
-
 // resend otp to user's email 
 func (s *AuthService) ResendOTP(req *models.ResendOTPRequest) (*models.AuthResponse, error){
 	// 1. Check if user exists and is not verified

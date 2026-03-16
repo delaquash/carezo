@@ -75,7 +75,8 @@ func main() {
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/verify-otp", authHandler.VerifyOTP)
-			auth.POST("/complete-profile", authHandler.CompleteProfile)
+			// auth.POST("/complete-profile", authHandler.CompleteProfile)
+			auth.POST("/resend-otp", authHandler.ResendOTP)
 			auth.POST("/login", authHandler.Login)
 			auth.POST("/forgot-password", authHandler.ForgotPassword)
 			auth.POST("/reset-password", authHandler.ResetPassword)

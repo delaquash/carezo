@@ -42,7 +42,6 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	response.Success(c, http.StatusCreated, "Registration successful. Please check your email for verification code.", nil)
 }
 
-
 // POST /api/auth/verify-otp
 // Body: {"email": "user@example.com", "otp": "123456"}
 func (h *AuthHandler) VerifyOTP(c *gin.Context) {
@@ -52,13 +51,14 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	err := h.authService.VerifyOTP(&req)
+	// Returns token now!
+	authResponse, err := h.authService.VerifyOTP(&req)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Email verified successfully. Please complete your profile.", nil)
+	response.Success(c, http.StatusOK, "Email verified successfully", authResponse)
 }
 
 // POST /api/auth/resend-otp
