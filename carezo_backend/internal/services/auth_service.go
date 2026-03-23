@@ -100,9 +100,6 @@ func(s * AuthService) Register(req *models.RegisterRequest) error {
 		return nil
 }
 
-// VerifyOTP verifies the OTP code sent to user's email
-// Update this in internal/services/auth_service.go
-
 // VerifyOTP verifies the OTP code and logs user in
 func (s *AuthService) VerifyOTP(req *models.VerifyOTPRequest) (*models.AuthResponse, error) {
 	// 1. Verify OTP from Redis
@@ -308,11 +305,3 @@ func (s *AuthService) ResetPassword(req *models.ResetPasswordRequest) error {
 
 	return nil
 }
-
-// func generateSecureToken(length int) (string, error) {
-// 	bytes := make([]byte, length)
-// 	if _, err := rand.Read(bytes); err != nil {
-// 		return "", err
-// 	}
-// 	return hex.EncodeToString(bytes), nil
-// }
