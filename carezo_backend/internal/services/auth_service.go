@@ -1,13 +1,10 @@
 package services
 
 import (
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"time"
-
 	"github.com/google/uuid"
 	"github.com/delaquash/carezo/configs"
 	"github.com/delaquash/carezo/internal/database"
@@ -228,7 +225,7 @@ func (s *AuthService) ForgotPassword(req *models.ForgotPasswordRequest) error {
 	}
 
 	// 2. Generate reset token
-	resetToken, err := generateSecureToken(32)
+	resetToken, err :=utils.GenerateSecureToken(32)
 	if err != nil {
 		return err
 	}
@@ -288,10 +285,10 @@ func (s *AuthService) ResetPassword(req *models.ResetPasswordRequest) error {
 	return nil
 }
 
-func generateSecureToken(length int) (string, error) {
-	bytes := make([]byte, length)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(bytes), nil
-}
+// func generateSecureToken(length int) (string, error) {
+// 	bytes := make([]byte, length)
+// 	if _, err := rand.Read(bytes); err != nil {
+// 		return "", err
+// 	}
+// 	return hex.EncodeToString(bytes), nil
+// }
