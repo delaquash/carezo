@@ -29,51 +29,75 @@ func NewAuthService(cfg *configs.Config) *AuthService {
 
 // Register creates a new user account and sends OTP via email
 // SIMPLIFIED: Email-only, no SMS
-func (s *AuthService) Register(req *models.RegisterRequest) error {
+func(s * AuthService) Register(req *models.RegisterRequest) error {
 	// 1. Check if user already exists
 	var exists bool
-	query := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND deleted_at IS NULL)`
+	query:= `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND deleted_at IS NULL)`
 	err := database.DB.Get(&exists, query, req.Email)
+
 	if err != nil {
-		return fmt.Errorf("database error: %w", err)
-	}
-	if exists {
-		return errors.New("user with this email already exists")
+		return fmt.Errorf("Database error: %w", err)
 	}
 
-	// 2. Hash password
+	if exists{
+		return errors.New("email is already registered")
+	}
+
+	// hashed password
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	// 3. Create user in database (incomplete profile, pending verification)
-	userID := uuid.New().String()
+	// Split full name
+	firstName, lastName := utils.SplitFullName(req.FullName)
+
+	firstName = utils.CapitalizeName(firstName)
+	lastName = utils.CapitalizeName(lastName)
+
+	// Create user in database
+	userID := uuid.New()
 	query = `
-		INSERT INTO users (id, email, password_hash, oauth_provider, status, role, email_verified)
-		VALUES ($1, $2, $3, 'local', 'active', 'user', false)
-	`
-	_, err = database.DB.Exec(query, userID, req.Email, hashedPassword)
-	if err != nil {
-		return fmt.Errorf("failed to create user: %w", err)
-	}
+	    INSERT INTO users(
+			id,
+			email,
+			password_hash,
+			first_name,
+			last_name,
+			oauth_provider,
+			status,
+			role,
+			email_verified,
+		)
+		VALUES ($1, $2, $3, $4, $5, 'local', 'active', 'user', false)	
+		`
+		_, err = database.DB.Exec(
+			query,
+			userID,
+			req.Email,
+			hashedPassword,
+			firstName,
+			lastName,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create user: %w", err)
+		}
 
-	// 4. Generate and store OTP
-	otp, err := s.otpService.GenerateAndStoreOTP(req.Email)
-	if err != nil {
-		return err
-	}
+		// generate and store OTP
+		otp, err := s.otpService.GenerateAndStoreOTP(req.Email)
+		if err != nil {
+			return fmt.Errorf("failed to generate OTP: %w", err)
+		}
 
-	// 5. Send OTP via email
-	err = s.emailService.SendOTPEmail(req.Email, otp)
-	if err != nil {
-		// Log error but don't fail registration
-		fmt.Printf("Warning: Failed to send OTP email: %v\n", err)
-		return fmt.Errorf("failed to send verification email: %w", err)
-	}
+		// send OTP email
+		err = s.emailService.SendOTPEmail(req.Email, otp)
+		if err != nil {
+			fmt.Printf("Warning: Failed to send OTP email: %v\n", err)
+			return fmt.Errorf("failed to send verification email: %w", err)
+		}
 
-	fmt.Printf("📧 OTP sent to %s: %s\n", req.Email, otp) // For development
-	return nil
+		fmt.Printf("User registered with email %s. OTP sent: %s\n", req.Email, otp)
+		return nil
 }
 
 // VerifyOTP verifies the OTP code sent to user's email

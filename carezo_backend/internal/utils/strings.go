@@ -35,7 +35,7 @@ func SplitFullName(fullName string) (string, string){
 // Capitalize first lette of each name
 // Example: "john doe" -> "John Doe"
 
-func CapitalizeName(name string)string {
+func CapitalizeName(name string) string {
 	words:= strings.Fields(name)
 	for i, word:= range words {
 		if len(word) > 0 {

@@ -47,8 +47,10 @@ type User struct {
 
 // RegisterRequest 
 type RegisterRequest struct {
+	FullName string `json:"fullName" binding:"required,min=2,max=200"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8"`
+	Country  string `json:"country" binding:"required"`
 }
 
 // VerifyOTPRequest 
