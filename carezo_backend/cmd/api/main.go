@@ -153,36 +153,6 @@ func main() {
 			}
 		}
 
-		////////////////////////////////////////////////////////////////////////////////
-		// ❌ DUPLICATE BLOCK (COMMENTED OUT)
-		// Reason:
-		// - Re-registers /api/admin/users → causes Gin panic
-		// - /me route wrongly placed here → moved above
-		////////////////////////////////////////////////////////////////////////////////
-
-		/*
-		{
-			// ❌ MOVED to protected block above
-			protected.GET("/me", func(c *gin.Context) {
-				userID := c.GetString("user_id")
-				userEmail := c.GetString("user_email")
-				c.JSON(http.StatusOK, gin.H{
-					"user_id": userID,
-					"email": userEmail,
-				})
-			})
-
-			// ❌ DUPLICATE admin group
-			admin := protected.Group("/admin")
-			admin.Use(middleware.RequireRole("admin"))
-			{
-				// ❌ DUPLICATE ROUTE: /api/admin/users
-				admin.GET("/users", func(c *gin.Context) {
-					c.JSON(http.StatusOK, gin.H{"message": "Admin users list"})
-				})
-			}
-		}
-		*/
 	}
 
 	// ================= SERVER =================

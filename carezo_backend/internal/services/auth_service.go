@@ -67,7 +67,7 @@ func(s * AuthService) Register(req *models.RegisterRequest) error {
 			oauth_provider,
 			status,
 			role,
-			email_verified,
+			email_verified
 		)
 		VALUES ($1, $2, $3, $4, $5, 'local', 'active', 'user', false)	
 		`
