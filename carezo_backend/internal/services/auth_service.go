@@ -32,11 +32,16 @@ func NewAuthService(cfg *configs.Config) *AuthService {
 func(s * AuthService) Register(req *models.RegisterRequest) error {
 	// 1. Check if user already exists
 	var exists bool
-	query:= `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND deleted_at IS NULL)`
+	query:= `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND deleted_at IS NULL AND email_verified = TRUE)`
 	err := database.DB.Get(&exists, query, req.Email)
 
 	if err != nil {
 		return fmt.Errorf("Database error: %w", err)
+	}
+
+	if !exists {
+		// delete any unverified attempt qith this email
+		database.DB.Exec(`DELETE FROM users WHERE email = $1 AND email_verified= false`, req.Email)
 	}
 
 	if exists{
@@ -147,39 +152,39 @@ func (s *AuthService) VerifyOTP(req *models.VerifyOTPRequest) (*models.AuthRespo
 	}, nil
 }
 // resend otp to user's email 
-func (s *AuthService) ResendOTP(req *models.ResendOTPRequest) (*models.AuthResponse, error){
+func (s *AuthService) ResendOTP(req *models.ResendOTPRequest) error {
 	// 1. Check if user exists and is not verified
 	var user models.User
-	query := `SELECT * FROM user WHERE email = $1 AND deleted_at IS NULL`
+	query := `SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL`
 	err := database.DB.Get(&user, query, req.Email)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.New("user not found")
+			return  errors.New("user not found")
 		}
-		return nil, fmt.Errorf("database error: %w", err)
+		return fmt.Errorf("database error: %w", err)
 	}
 
 	// Dont resend if user is verified
 	if user.EmailVerified {
-		return nil, errors.New("email is already verified")
+		return errors.New("email is already verified")
 	}
 
 	// Generate new OTp
 	otp, err := s.otpService.GenerateAndStoreOTP(req.Email)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("Failed to generate OTP: %w", err)
 	}
 
 	// Send OTP via email
 	err = s.emailService.SendOTPEmail(req.Email, otp)
 	if err != nil {
 		fmt.Printf("Warning: Failed to send OTP email: %v\n", err)
-		return nil, fmt.Errorf("failed to resend verification email: %w", err)
+		return  fmt.Errorf("failed to resend verification email: %w", err)
 	}
 	
 	fmt.Printf("OTP resent to %s: %s\n", req.Email, otp)
-	return nil, err
+	return nil
 }
 
 // Login authenticates user with email and password

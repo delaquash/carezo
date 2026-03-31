@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"net/http"
 
+	"net/http"
 	"github.com/delaquash/carezo/configs"
 	"github.com/delaquash/carezo/internal/model"
 	"github.com/delaquash/carezo/internal/services"
@@ -62,7 +62,6 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 }
 
 // POST /api/auth/resend-otp
-func (h *AuthHandler) ResendOTP(c *gin.Context) {}
 
 
 
@@ -100,6 +99,23 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "If your email exists, you will receive a password reset link.", nil)
+}
+
+// POST /api/auth/resend-otp
+// Body: {"email": "user@example.com"}
+
+func (h * AuthHandler) ResendOTP(c *gin.Context) {
+	var req models.ResendOTPRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		return
+	}
+	err := h.authService.ResendOTP(&req)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	response.Success(c, http.StatusOK, "A new verification code has been sent to your mail.", nil)
 }
 
 
