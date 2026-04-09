@@ -250,62 +250,62 @@ func (s *AuthService) ForgotPassword(req *models.ForgotPasswordRequest) error {
 		return nil
 	}
 
-	// 2. Generate reset token
-	resetToken, err :=utils.GenerateSecureToken(32)
+	// 2. Generate otp
+	otp, err := s.otpService.GenerateAndStoreOTP(req.Email)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to generate otp: %w", err)
 	}
 
-	// 3. Store reset token in database (expires in 1 hour)
-	expiresAt := time.Now().Add(1 * time.Hour)
-	query = `UPDATE users SET reset_token = $1, reset_token_expires_at = $2 WHERE id = $3`
-	_, err = database.DB.Exec(query, resetToken, expiresAt, user.ID)
-	if err != nil {
-		return fmt.Errorf("failed to store reset token: %w", err)
-	}
+	// send otp email
+	err = s.emailService.SendOTPEmail(req.Email, otp)
 
-	// 4. Send reset email
-	err = s.emailService.SendPasswordResetEmail(user.Email, resetToken)
 	if err != nil {
-		return fmt.Errorf("failed to send reset email: %w", err)
+		return fmt.Errorf("Failed to send otp: %w", err)
 	}
-
+	fmt.Printf("Password reset OTP sent to %s\n", req.Email)
 	return nil
 }
 
-// ResetPassword resets user password using reset token
+// ResetPassword resets user password using otp
 func (s *AuthService) ResetPassword(req *models.ResetPasswordRequest) error {
-	// 1. Find user with valid reset token
-	var user models.User
-	query := `
-		SELECT * FROM users 
-		WHERE reset_token = $1 
-		AND reset_token_expires_at > $2 
-		AND deleted_at IS NULL
-	`
-	err := database.DB.Get(&user, query, req.Token, time.Now())
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return errors.New("invalid or expired reset token")
-		}
-		return fmt.Errorf("database error: %w", err)
+	// Validate password
+	if req.NewPassword != req.ConfirmPassword {
+		return errors.New("Passwords do not match")
 	}
 
-	// 2. Hash new password
+	if len(req.NewPassword) < 6 {
+		return errors.New("Password must be at least 6 characters")
+	}
+
+	// Verify OTP
+	valid, err := s.otpService.VerifyOTP(req.Email, req.OTP)
+	if err != nil || !valid {
+		return errors.New("Invalid or expired OTP")
+	}
+
+	// Get user
+	var user models.User
+	err = database.DB.Get(&user, `SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL`, req.Email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return errors.New("User not found")
+		}
+		return fmt.Errorf("Database error: %w", err)
+	}
+
+	// Hash password
 	hashedPassword, err := utils.HashPassword(req.NewPassword)
 	if err != nil {
 		return err
 	}
 
-	// 3. Update password and clear reset token
-	query = `
-		UPDATE users 
-		SET password_hash = $1, reset_token = NULL, reset_token_expires_at = NULL 
-		WHERE id = $2
-	`
-	_, err = database.DB.Exec(query, hashedPassword, user.ID)
+	// Update password ONLY
+	_, err = database.DB.Exec(`
+		UPDATE users SET password_hash = $1 WHERE id = $2
+	`, hashedPassword, user.ID)
+
 	if err != nil {
-		return fmt.Errorf("failed to update password: %w", err)
+		return fmt.Errorf("Failed to update password: %w", err)
 	}
 
 	return nil

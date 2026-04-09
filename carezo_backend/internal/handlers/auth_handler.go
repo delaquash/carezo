@@ -124,15 +124,15 @@ func (h * AuthHandler) ResendOTP(c *gin.Context) {
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	var req models.ResetPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, "Invalid request data: " +err.Error())
 		return
 	}
 
 	err := h.authService.ResetPassword(&req)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
+    if err != nil {
+        response.Error(c, http.StatusBadRequest, err.Error())
+        return
+    }
 
-	response.Success(c, http.StatusOK, "Password reset successful. You can now login with your new password.", nil)
+    response.Success(c, http.StatusOK, "Password reset successful. You can now login with your new password.", nil)
 }

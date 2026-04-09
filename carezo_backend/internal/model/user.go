@@ -85,8 +85,10 @@ type ForgotPasswordRequest struct {
 }
 
 type ResetPasswordRequest struct {
-	Token       string `json:"token" binding:"required"`
-	NewPassword string `json:"new_password" binding:"required,min=8"`
+    Email           string `json:"email" binding:"required,email"`
+    OTP             string `json:"otp" binding:"required,len=4"`
+    NewPassword     string `json:"new_password" binding:"required,min=8"`
+    ConfirmPassword string `json:"confirm_password" binding:"required,min=8"`
 }
 
 type AuthResponse struct {
