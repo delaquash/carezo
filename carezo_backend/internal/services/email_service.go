@@ -1,9 +1,10 @@
 package services
 
 import (
+	"crypto/tls"
 	"fmt"
-	"net/smtp"
-
+	"strconv"
+    "gopkg.in/gomail.v2"
 	"github.com/delaquash/carezo/configs"
 )
 
@@ -54,33 +55,26 @@ func (s *EmailService) SendPasswordResetEmail(to, resetToken string) error {
 }
 
 // sendEmail is the actual email sending function
+
 func (s *EmailService) sendEmail(to, subject, body string) error {
-	// Set up authentication
-	auth := smtp.PlainAuth(
-		"",
-		s.cfg.SMTPUser,
-		s.cfg.SMTPPassword,
-		s.cfg.SMTPHost,
-	)
+    port, err := strconv.Atoi(s.cfg.SMTPPort)
+    if err != nil {
+        return fmt.Errorf("invalid SMTP port: %w", err)
+    }
 
-	// Compose email message
-	from := fmt.Sprintf("%s <%s>", s.cfg.FromName, s.cfg.FromEmail)
-	message := []byte(
-		fmt.Sprintf("From: %s\r\n", from) +
-		fmt.Sprintf("To: %s\r\n", to) +
-		fmt.Sprintf("Subject: %s\r\n", subject) +
-		"MIME-Version: 1.0\r\n" +
-		"Content-Type: text/html; charset=UTF-8\r\n" +
-		"\r\n" +
-		body,
-	)
+    m := gomail.NewMessage()
+    m.SetHeader("From", fmt.Sprintf("%s <%s>", s.cfg.FromName, s.cfg.FromEmail))
+    m.SetHeader("To", to)
+    m.SetHeader("Subject", subject)
+    m.SetBody("text/html", body)
 
-	// Send email
-	addr := fmt.Sprintf("%s:%s", s.cfg.SMTPHost, s.cfg.SMTPPort)
-	err := smtp.SendMail(addr, auth, s.cfg.FromEmail, []string{to}, message)
-	if err != nil {
-		return fmt.Errorf("failed to send email: %w", err)
-	}
+    d := gomail.NewDialer(s.cfg.SMTPHost, port, s.cfg.SMTPUser, s.cfg.SMTPPassword)
+    d.TLSConfig = &tls.Config{ServerName: s.cfg.SMTPHost}
+    d.SSL = true // ✅ port 465 uses SSL directly
 
-	return nil
+    if err := d.DialAndSend(m); err != nil {
+        return fmt.Errorf("failed to send email: %w", err)
+    }
+
+    return nil
 }

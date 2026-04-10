@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"time"
-	"github.com/google/uuid"
+
 	"github.com/delaquash/carezo/configs"
 	"github.com/delaquash/carezo/internal/database"
-	"github.com/delaquash/carezo/internal/model"
+	models "github.com/delaquash/carezo/internal/model"
 	"github.com/delaquash/carezo/internal/utils"
+	"github.com/google/uuid"
 )
-
 
 type AuthService struct {
 	cfg          *configs.Config
@@ -29,10 +29,10 @@ func NewAuthService(cfg *configs.Config) *AuthService {
 
 // Register creates a new user account and sends OTP via email
 // SIMPLIFIED: Email-only, no SMS
-func(s * AuthService) Register(req *models.RegisterRequest) error {
+func (s *AuthService) Register(req *models.RegisterRequest) error {
 	// 1. Check if user already exists
 	var exists bool
-	query:= `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND deleted_at IS NULL AND email_verified = TRUE)`
+	query := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND deleted_at IS NULL AND email_verified = TRUE)`
 	err := database.DB.Get(&exists, query, req.Email)
 
 	if err != nil {
@@ -44,7 +44,7 @@ func(s * AuthService) Register(req *models.RegisterRequest) error {
 		database.DB.Exec(`DELETE FROM users WHERE email = $1 AND email_verified= false`, req.Email)
 	}
 
-	if exists{
+	if exists {
 		return errors.New("email is already registered")
 	}
 
@@ -76,33 +76,33 @@ func(s * AuthService) Register(req *models.RegisterRequest) error {
 		)
 		VALUES ($1, $2, $3, $4, $5, 'local', 'active', 'user', false)	
 		`
-		_, err = database.DB.Exec(
-			query,
-			userID,
-			req.Email,
-			hashedPassword,
-			firstName,
-			lastName,
-		)
-		if err != nil {
-			return fmt.Errorf("failed to create user: %w", err)
-		}
+	_, err = database.DB.Exec(
+		query,
+		userID,
+		req.Email,
+		hashedPassword,
+		firstName,
+		lastName,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create user: %w", err)
+	}
 
-		// generate and store OTP
-		otp, err := s.otpService.GenerateAndStoreOTP(req.Email)
-		if err != nil {
-			return fmt.Errorf("failed to generate OTP: %w", err)
-		}
+	// generate and store OTP
+	otp, err := s.otpService.GenerateAndStoreOTP(req.Email)
+	if err != nil {
+		return fmt.Errorf("failed to generate OTP: %w", err)
+	}
 
-		// send OTP email
-		err = s.emailService.SendOTPEmail(req.Email, otp)
-		if err != nil {
-			fmt.Printf("Warning: Failed to send OTP email: %v\n", err)
-			return fmt.Errorf("failed to send verification email: %w", err)
-		}
+	// send OTP email
+	err = s.emailService.SendOTPEmail(req.Email, otp)
+	if err != nil {
+		fmt.Printf("Warning: Failed to send OTP email: %v\n", err)
+		return fmt.Errorf("failed to send verification email: %w", err)
+	}
 
-		fmt.Printf("User registered with email %s. OTP sent: %s\n", req.Email, otp)
-		return nil
+	fmt.Printf("User registered with email %s. OTP sent: %s\n", req.Email, otp)
+	return nil
 }
 
 // VerifyOTP verifies the OTP code and logs user in
@@ -151,7 +151,8 @@ func (s *AuthService) VerifyOTP(req *models.VerifyOTPRequest) (*models.AuthRespo
 		User:         &user,
 	}, nil
 }
-// resend otp to user's email 
+
+// resend otp to user's email
 func (s *AuthService) ResendOTP(req *models.ResendOTPRequest) error {
 	// 1. Check if user exists and is not verified
 	var user models.User
@@ -160,7 +161,7 @@ func (s *AuthService) ResendOTP(req *models.ResendOTPRequest) error {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return  errors.New("user not found")
+			return errors.New("user not found")
 		}
 		return fmt.Errorf("database error: %w", err)
 	}
@@ -180,9 +181,9 @@ func (s *AuthService) ResendOTP(req *models.ResendOTPRequest) error {
 	err = s.emailService.SendOTPEmail(req.Email, otp)
 	if err != nil {
 		fmt.Printf("Warning: Failed to send OTP email: %v\n", err)
-		return  fmt.Errorf("failed to resend verification email: %w", err)
+		return fmt.Errorf("failed to resend verification email: %w", err)
 	}
-	
+
 	fmt.Printf("OTP resent to %s: %s\n", req.Email, otp)
 	return nil
 }
@@ -241,27 +242,26 @@ func (s *AuthService) Login(req *models.LoginRequest) (*models.AuthResponse, err
 
 // ForgotPassword initiates password reset process
 func (s *AuthService) ForgotPassword(req *models.ForgotPasswordRequest) error {
-	// 1. Find user by email
 	var user models.User
 	query := `SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL`
 	err := database.DB.Get(&user, query, req.Email)
 	if err != nil {
-		// Don't reveal if email exists (security best practice)
-		return nil
+		if err == sql.ErrNoRows {
+			return errors.New("user not found")
+		}
+		return fmt.Errorf("database error: %w", err)
 	}
 
-	// 2. Generate otp
 	otp, err := s.otpService.GenerateAndStoreOTP(req.Email)
 	if err != nil {
-		return fmt.Errorf("failed to generate otp: %w", err)
+		return fmt.Errorf("failed to generate OTP: %w", err)
 	}
 
-	// send otp email
 	err = s.emailService.SendOTPEmail(req.Email, otp)
-
 	if err != nil {
-		return fmt.Errorf("Failed to send otp: %w", err)
+		return fmt.Errorf("failed to send OTP: %w", err)
 	}
+
 	fmt.Printf("Password reset OTP sent to %s\n", req.Email)
 	return nil
 }

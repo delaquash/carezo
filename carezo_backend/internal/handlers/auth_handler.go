@@ -1,16 +1,15 @@
 package handlers
 
 import (
-
 	"net/http"
+
 	"github.com/delaquash/carezo/configs"
-	"github.com/delaquash/carezo/internal/model"
+	models "github.com/delaquash/carezo/internal/model"
 	"github.com/delaquash/carezo/internal/services"
 	response "github.com/delaquash/carezo/pkg"
 	"github.com/gin-gonic/gin"
 	// "golang.org/x/tools/go/cfg"
 )
-
 
 type AuthHandler struct {
 	authService *services.AuthService
@@ -63,8 +62,6 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 
 // POST /api/auth/resend-otp
 
-
-
 // POST /api/auth/login
 // Body: {"email": "user@example.com", "password": "SecurePass123!"}
 func (h *AuthHandler) Login(c *gin.Context) {
@@ -83,7 +80,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Login successful", authResponse)
 }
 
-
 // POST /api/auth/forgot-password
 // Body: {"email": "user@example.com"}
 func (h *AuthHandler) ForgotPassword(c *gin.Context) {
@@ -95,16 +91,17 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 
 	err := h.authService.ForgotPassword(&req)
 	if err != nil {
-		c.Error(err)
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	response.Success(c, http.StatusOK, "If your email exists, you will receive a password reset link.", nil)
+	response.Success(c, http.StatusOK, "OTP sent to your email address.", nil)
 }
 
 // POST /api/auth/resend-otp
 // Body: {"email": "user@example.com"}
 
-func (h * AuthHandler) ResendOTP(c *gin.Context) {
+func (h *AuthHandler) ResendOTP(c *gin.Context) {
 	var req models.ResendOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
@@ -118,21 +115,20 @@ func (h * AuthHandler) ResendOTP(c *gin.Context) {
 	response.Success(c, http.StatusOK, "A new verification code has been sent to your mail.", nil)
 }
 
-
 // POST /api/auth/reset-password
-// Body: {"token": "abc123...", "new_password": "NewPass456!"}
+// Body: {"email": "user@example.com", "otp": "1234", "new_password": "NewPass456!", "confirm_password": "NewPass456!"}
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	var req models.ResetPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: " +err.Error())
+		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
 		return
 	}
 
 	err := h.authService.ResetPassword(&req)
-    if err != nil {
-        response.Error(c, http.StatusBadRequest, err.Error())
-        return
-    }
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
 
-    response.Success(c, http.StatusOK, "Password reset successful. You can now login with your new password.", nil)
+	response.Success(c, http.StatusOK, "Password reset successful. You can now login with your new password.", nil)
 }
