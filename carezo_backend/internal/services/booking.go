@@ -37,7 +37,7 @@ func generateBookingReference() (string, error) {
 	return "BK-" + string(b), nil
 }
 
-// CreateBooking
+// CreateBooking by user
 func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingRequest) (*models.Booking, error) {
 	// validate date
 	now := time.Now()

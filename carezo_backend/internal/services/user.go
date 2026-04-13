@@ -69,11 +69,9 @@ func (s *UserService) CompleteProfile(userID string, req *models.CompleteProfile
 		return nil, errors.New("Email must be verified before completing profile")
 	}
 	// check if profile already completed
-
-	if user.FirstName != "" && user.LastName != "" {
-		return nil, errors.New("Profile already completed")
+	if user.ProfileCompleted {
+		return nil, errors.New("profile already completed")
 	}
-
 	// Update user profile with complete information
 	query := `
 		UPDATE users
