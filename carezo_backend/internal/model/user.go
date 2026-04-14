@@ -26,7 +26,8 @@ type User struct {
 	ProfileImageURL *string `json:"profile_image_url,omitempty" db:"profile_image_url"`
 
 	// Verification 
-	EmailVerified          bool       `json:"email_verified" db:"email_verified"`
+	EmailVerified          	bool      `json:"email_verified" db:"email_verified"`
+	ProfileCompleted 		bool 	  `json:"profile_completed" db:"profile_completed"`
 	EmailVerificationToken *string    `json:"-" db:"email_verification_token"`
 	OTPExpiresAt           *time.Time `json:"-" db:"otp_expires_at"`
 

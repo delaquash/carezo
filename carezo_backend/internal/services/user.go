@@ -82,6 +82,7 @@ func (s *UserService) CompleteProfile(userID string, req *models.CompleteProfile
 			   profession = $5,
 			   location = $6,
 			   profile_image_url = $7
+			   profile_completed = TRUE
 		WHERE  id         = $8
 		  AND  deleted_at IS NULL
 		RETURNING *
