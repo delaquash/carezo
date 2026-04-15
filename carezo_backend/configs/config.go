@@ -145,7 +145,7 @@ func LoadConfig() *Config {
 
 		// Admin seeder
 		// Admin seeder
-		AdminEmail:     getEnv("ADMIN_EMAIL", "olaidemmanuel0@gmail"),
+		AdminEmail:     getEnv("ADMIN_EMAIL", "admin@carezo.com"),
 		AdminPassword:  getEnv("ADMIN_PASSWORD", "Admin123!"),
 		AdminFirstName: getEnv("ADMIN_FIRST_NAME", "Carezo"),
 		AdminLastName:  getEnv("ADMIN_LAST_NAME", "Admin"),

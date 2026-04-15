@@ -27,6 +27,10 @@ func main() {
 		log.Fatalf("Failed to connect to PostgreSQL: %v", err)
 	}
 	defer database.ClosePostgres()
+	
+
+	// Run seeder after DB is ready for admin user
+	database.SeedAdminUser(cfg)
 
 	// connect to redis
 	redis, err := database.ConnectRedis(cfg)
