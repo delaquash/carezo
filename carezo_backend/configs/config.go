@@ -17,6 +17,12 @@ type Config struct {
 	DBPassword string
 	DBName     string
 
+	// admin seeder
+	AdminEmail 		string
+	AdminPassword	string
+	AdminFirstName	string
+	AdminLastName	string
+
 	// Redis settings
 	RedisHost     string
 	RedisPort     string
@@ -136,6 +142,13 @@ func LoadConfig() *Config {
 		MaxUploadSizeMB:   getEnvAsInt("MAX_UPLOAD_SIZE_MB", 5),
 		UploadPath:        getEnv("UPLOAD_PATH", "./uploads"),
 		AllowedImageTypes: getEnv("ALLOWED_IMAGE_TYPES", "jpg,jpeg,png,webp"),
+
+		// Admin seeder
+		// Admin seeder
+		AdminEmail:     getEnv("ADMIN_EMAIL", "olaidemmanuel0@gmail"),
+		AdminPassword:  getEnv("ADMIN_PASSWORD", "Admin123!"),
+		AdminFirstName: getEnv("ADMIN_FIRST_NAME", "Carezo"),
+		AdminLastName:  getEnv("ADMIN_LAST_NAME", "Admin"),
 	}
 }
 
