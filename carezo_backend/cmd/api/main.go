@@ -17,6 +17,7 @@ import (
 )
 
 func main() {
+	log.Println("MAIN FUNCTION STARTED")
 	// load configs
 	cfg := configs.LoadConfig()
 	log.Printf("Starting %s in %s mode", cfg.AppName, cfg.AppEnv)
@@ -29,7 +30,11 @@ func main() {
 	defer database.ClosePostgres()
 
 	// Run seeder after DB is ready for admin user
+
+	log.Println("🔥 ABOUT TO RUN SEEDER")
 	database.SeedAdminUser(db, cfg)
+	log.Println("🔥 SEEDER FINISHED")
+
 	// connect to redis
 	redis, err := database.ConnectRedis(cfg)
 	if err != nil {
