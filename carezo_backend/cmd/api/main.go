@@ -27,11 +27,9 @@ func main() {
 		log.Fatalf("Failed to connect to PostgreSQL: %v", err)
 	}
 	defer database.ClosePostgres()
-	
 
 	// Run seeder after DB is ready for admin user
-	database.SeedAdminUser(cfg)
-
+	database.SeedAdminUser(db, cfg)
 	// connect to redis
 	redis, err := database.ConnectRedis(cfg)
 	if err != nil {
@@ -105,7 +103,7 @@ func main() {
 		protected := api.Group("")
 		protected.Use(middleware.AuthMiddleware(cfg))
 		{
-			// ✅ MOVED HERE (correct placement)
+
 			protected.GET("/me", func(c *gin.Context) {
 				userID := c.GetString("user_id")
 				userEmail := c.GetString("user_email")
@@ -134,26 +132,32 @@ func main() {
 			protected.POST("/reviews", driverHandler.CreateReview)
 		}
 
-		// ================= ADMIN =================
+		// Admin routes
 		admin := protected.Group("/admin")
 		admin.Use(middleware.RequireRole("admin"))
 		{
 			// Car management
-			admin.POST("/cars", carHandler.CreateCar)
-			admin.PUT("/cars/:id", carHandler.UpdateCar)
-			admin.DELETE("/cars/:id", carHandler.DeleteCar)
+			cars := admin.Group("/cars")
+			{
+				cars.POST("", carHandler.CreateCar)
+				cars.PUT("/:id", carHandler.UpdateCar)
+				cars.DELETE("/:id", carHandler.DeleteCar)
+			}
 
 			// Driver management
-			admin.POST("/drivers", driverHandler.CreateDriver)
-			admin.PUT("/drivers/:id", driverHandler.UpdateDriver)
-			admin.DELETE("/drivers/:id", driverHandler.DeleteDriver)
+			drivers := admin.Group("/drivers")
+			{
+				drivers.POST("", driverHandler.CreateDriver)
+				drivers.PUT("/:id", driverHandler.UpdateDriver)
+				drivers.DELETE("/:id", driverHandler.DeleteDriver)
+			}
 
 			// User management
-			adminUsers := admin.Group("/users")
+			users := admin.Group("/users")
 			{
-				adminUsers.GET("", userHandler.ListAllUsers) // ✅ correct route
-				adminUsers.PUT("/:id/status", userHandler.UpdateUserStatus)
-				adminUsers.GET("/get-user/:id", userHandler.GetUserByID)
+				users.GET("", userHandler.ListAllUsers)
+				users.GET("/:id", userHandler.GetUserByID) // fixed
+				users.PUT("/:id/status", userHandler.UpdateUserStatus)
 			}
 		}
 
