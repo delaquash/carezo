@@ -82,7 +82,7 @@ func (s *DriverService) CreateDriver(req *models.CreateDriverRequest) (*models.D
 // get single driver details by ID
 func (s *DriverService) GetDriverByID(driverID string) (*models.Driver, error) {
 	var driver models.Driver
-	query := `SELECT * FROM driver WHERE id = $1 and deleted_at IS NULL`
+	query := `SELECT * FROM drivers WHERE id = $1 and deleted_at IS NULL`
 	err := database.DB.Get(&driver, query, driverID)
 
 	if err != nil {
@@ -165,12 +165,12 @@ func (s *DriverService) UpdateDriver(driverID string, req *models.UpdateDriverRe
 		argCount++
 	}
 	if req.LicenseExpiryDate != nil {
-		expiryDate, err := time.Parse("1991-01-11", *req.LicenseExpiryDate)
+		expiryDate, err := time.Parse("2006-01-02", *req.LicenseExpiryDate)
 
 		if err != nil {
 			return nil, errors.New("Invalid license expiry date format")
 		}
-		updates = append(updates, fmt.Sprintf("Licence expiry date = $%d", argCount))
+		updates = append(updates, fmt.Sprintf("license_expiry_date = $%d", argCount))
 		args = append(args, expiryDate)
 		argCount++
 	}
@@ -186,7 +186,7 @@ func (s *DriverService) UpdateDriver(driverID string, req *models.UpdateDriverRe
 	}
 	if req.Languages != nil {
 		languagesJSON, _ := json.Marshal(req.Languages)
-		updates = append(updates, fmt.Sprintf("Languages = $%d", argCount))
+		updates = append(updates, fmt.Sprintf("languages = $%d", argCount))
 		args = append(args, languagesJSON)
 		argCount++
 	}

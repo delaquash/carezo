@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
-// 
+
+	//
 	"github.com/delaquash/carezo/internal/database"
 	models "github.com/delaquash/carezo/internal/model"
 	"github.com/google/uuid"
@@ -43,20 +44,19 @@ func (s *CarService) CreateCar(req *models.CreateCarRequest) (*models.Car, error
 
 	// convert hourly rate to JSON
 	hourlyRateJSON, err := json.Marshal(req.HourlyRate)
-
 	if err != nil {
-		return nil, fmt.Errorf("Failed to marshal hourly)rate: %w", err)
+		return nil, fmt.Errorf("failed to marshal hourly rate: %w", err)
 	}
 
 	// create car in database
 	carID := uuid.New().String()
 	query = `
 			INSERT INTO cars (
-			id, model, brand, year, color, licence_plate, engine_output, transmission, fuel_type
+			id, model, brand, year, color, licence_plate, engine_output, transmission, fuel_type,
 			seating_capacity, maximum_speed, mileage, driver_name,driver_number, driver_miles, hourly_rate,
-			caution_fee, features, images, is_available, status, current_location
+			caution_fee,features, images, is_available, status, current_location
 			) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, '[]'::jsonb, true, "active", $19
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, '[]'::jsonb, true, 'active', $19
 			)
 			RETURNING *
 		`
@@ -77,9 +77,8 @@ func (s *CarService) CreateCar(req *models.CreateCarRequest) (*models.Car, error
 	return &car, nil
 }
 
-
 // get a single car by ID
-func(s *CarService) GetCarByID(carID string)(*models.Car, error) {
+func (s *CarService) GetCarByID(carID string) (*models.Car, error) {
 	var car models.Car
 
 	query := `SELECT * FROM cars WHERE id = $1 and deleted_at IS NULL`
@@ -94,15 +93,13 @@ func(s *CarService) GetCarByID(carID string)(*models.Car, error) {
 	return &car, nil
 }
 
-
-func(s *CarService) UpdateCar(carID string, req *models.UpdateCarRequest) (*models.Car, error) {
+func (s *CarService) UpdateCar(carID string, req *models.UpdateCarRequest) (*models.Car, error) {
 	// check if car exist
 	_, err := s.GetCarByID(carID)
 
 	if err != nil {
 		return nil, err
 	}
-
 
 	// dynamic update query that only update provided fields
 	var updates []string
@@ -206,7 +203,6 @@ func(s *CarService) UpdateCar(carID string, req *models.UpdateCarRequest) (*mode
 		return nil, errors.New("no fields to update")
 	}
 
-
 	// add updated_at
 	updates = append(updates, "updated_at = CURRENT_TIMESTAMP")
 
@@ -219,7 +215,7 @@ func(s *CarService) UpdateCar(carID string, req *models.UpdateCarRequest) (*mode
 		SET %s
 		WHERE id = $%d AND deleted_at IS NULL
 		RETURNING * 
-		`, strings.Join(updates, ", "),argCount)
+		`, strings.Join(updates, ", "), argCount)
 	var car models.Car
 	err = database.DB.Get(&car, query, args...)
 
@@ -233,17 +229,17 @@ func(s *CarService) UpdateCar(carID string, req *models.UpdateCarRequest) (*mode
 
 func (s *CarService) DeleteCar(carID string) error {
 	// check if car exist
-	_,  err := s.GetCarByID(carID)
+	_, err := s.GetCarByID(carID)
 
 	if err != nil {
-		return err	
+		return err
 	}
 
 	// soft delete car
 	query := `UPDATE cars SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL`
 
-	result, err  := database.DB.Exec(query, carID)
-	
+	result, err := database.DB.Exec(query, carID)
+
 	if err != nil {
 		return fmt.Errorf("Failed to delete car: %w", err)
 	}
@@ -256,9 +252,8 @@ func (s *CarService) DeleteCar(carID string) error {
 	return nil
 }
 
-
 // Search for cars and filter by pagination
-func (s *CarService) SearchCars(req *models.SearchCarsRequest)(*models.CarListResponse, error) {
+func (s *CarService) SearchCars(req *models.SearchCarsRequest) (*models.CarListResponse, error) {
 	// build WHERE clause dynamically based on filters
 
 	var conditions []string
@@ -267,7 +262,6 @@ func (s *CarService) SearchCars(req *models.SearchCarsRequest)(*models.CarListRe
 
 	// exclude deleted acrs
 	conditions = append(conditions, "deleted_at IS NULL")
-
 
 	// apply filters
 
@@ -350,7 +344,6 @@ func (s *CarService) SearchCars(req *models.SearchCarsRequest)(*models.CarListRe
 		orderBy = fmt.Sprintf("%s %s", req.SortBy, order)
 	}
 
-
 	// calculation for pagination
 
 	page := req.Page
@@ -386,30 +379,28 @@ func (s *CarService) SearchCars(req *models.SearchCarsRequest)(*models.CarListRe
 	// claculate total pages
 	totalPages := (total + perPage - 1) / perPage
 
-
 	// response
-	return  &models.CarListResponse{
+	return &models.CarListResponse{
 		Cars: cars,
 		Pagination: models.PaginationMeta{
-			Page:   page,
-			PerPage: perPage,
-			Total: total,
+			Page:       page,
+			PerPage:    perPage,
+			Total:      total,
 			TotalPages: totalPages,
 		},
 
-		Filters: map[string]interface{} {
-			"brand": req.Brand,
-			"model": req.Model,
+		Filters: map[string]interface{}{
+			"brand":        req.Brand,
+			"model":        req.Model,
 			"transmission": req.Transmission,
-			"fuel_type": req.FuelType,
+			"fuel_type":    req.FuelType,
 			"is_available": req.IsAvailable,
 		},
 	}, nil
 }
 
-
 // Get available cars for given date range
-func (s *CarService)GetAvailableCars(pickupDate, returnDate time.Time)([]*models.Car, error) {
+func (s *CarService) GetAvailableCars(pickupDate, returnDate time.Time) ([]*models.Car, error) {
 	// query cars not booked within requested period and date range
 	query := `
 		SELECT c.* FROM cars c

@@ -4,44 +4,40 @@ import (
 	"time"
 )
 
-
 type Driver struct {
 	ID string `json:"id" db:"id"`
 
-	FirstName    string `json:"first_name" db:"first_name"`
-	LastName     string `json:"last_name" db:"last_name"`
-	Age          int    `json:"age" db:"age"`
-	Gender       string `json:"gender" db:"gender"`
+	FirstName string `json:"first_name" db:"first_name"`
+	LastName  string `json:"last_name" db:"last_name"`
+	Age       int    `json:"age" db:"age"`
+	Gender    string `json:"gender" db:"gender"`
 
-	State        string `json:"state" db:"state"`
-	Religion     string `json:"religion, omitempty" db:"religion"`
-	Complexion   string `json:"complexion, omitempty" db:"complexion"`
-	Height       string `json:"height" db:"height"`
-	
-	// Contact info
-	PhoneNumber  string `json:"phone_number" db:"phone_number"`
-	Email        *string `json:"email" db:"email"`
+	State      string `json:"state" db:"state"`
+	Religion   string `json:"religion,omitempty" db:"religion"`     // ✅ no space
+	Complexion string `json:"complexion,omitempty" db:"complexion"` // ✅ no space
+	Height     int    `json:"height" db:"height"`                   // ✅ int not string
 
-	LicenseNumber string `json:"license_number" db:"license_number"`
+	PhoneNumber string  `json:"phone_number" db:"phone_number"`
+	Email       *string `json:"email" db:"email"`
+
+	LicenseNumber     string    `json:"license_number" db:"license_number"`
 	LicenseExpiryDate time.Time `json:"license_expiry_date" db:"license_expiry_date"`
-	YearsOfExperience int `json:"years_of_experience" db:"years_of_experience"`
+	YearsOfExperience int       `json:"years_of_experience" db:"years_of_experience"`
 
 	ProfileImageURL *string `json:"profile_image_url,omitempty" db:"profile_image_url"`
 	Bio             *string `json:"bio,omitempty" db:"bio"`
-	Languages       JSONB   `json:"languages" db:"languages"` 
+	Languages       JSONB   `json:"languages" db:"languages"`
 
-	// Ratings & Performance
-	AverageRating float64 `json:"average_rating" db:"average_rating"` 
+	AverageRating float64 `json:"average_rating" db:"average_rating"`
 	TotalReviews  int     `json:"total_reviews" db:"total_reviews"`
 	TotalTrips    int     `json:"total_trips" db:"total_trips"`
 
-	IsAvailable   bool   `json:"is_available" db:"is_available"`
-	Status        string `json:"status" db:"status"` // "active", "on_trip", "unavailable", "suspended"
+	IsAvailable bool   `json:"is_available" db:"is_available"`
+	Status      string `json:"status" db:"status"`
 
-	// Timestamps
-	CreatedAt 	  time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt 	  time.Time  `json:"updated_at" db:"updated_at"`
-	DeletedAt 	  *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
+	CreatedAt time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
+	DeletedAt *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
 }
 
 // CreateDriverRequest - for admin
@@ -87,18 +83,18 @@ type UpdateDriverRequest struct {
 // SearchDriversRequest - Search and filter drivers
 type SearchDriversRequest struct {
 	// Filters
-	Gender            *string  `form:"gender"`      
-	State             *string  `form:"state"`
-	Religion          *string  `form:"religion"`
-	Complexion        *string  `form:"complexion"`
-	MinAge            *int     `form:"min_age"`
-	MaxAge            *int     `form:"max_age"`
-	MinHeight         *int     `form:"min_height"`
-	MaxHeight         *int     `form:"max_height"`
-	MinExperience     *int     `form:"min_experience"`
-	MinRating         *float64 `form:"min_rating"`
-	IsAvailable       *bool    `form:"is_available"`
-	Language          *string  `form:"language"` 
+	Gender        *string  `form:"gender"`
+	State         *string  `form:"state"`
+	Religion      *string  `form:"religion"`
+	Complexion    *string  `form:"complexion"`
+	MinAge        *int     `form:"min_age"`
+	MaxAge        *int     `form:"max_age"`
+	MinHeight     *int     `form:"min_height"`
+	MaxHeight     *int     `form:"max_height"`
+	MinExperience *int     `form:"min_experience"`
+	MinRating     *float64 `form:"min_rating"`
+	IsAvailable   *bool    `form:"is_available"`
+	Language      *string  `form:"language"`
 
 	// Sorting
 	SortBy  string `form:"sort_by" binding:"omitempty,oneof=average_rating years_of_experience total_trips age"`

@@ -86,7 +86,7 @@ func (h *DriverHandler) DeleteDriver(c *gin.Context) {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	response.Success(c, http.StatusBadRequest, "Driver deleted successfully", nil)
+	response.Success(c, http.StatusOK, "Driver deleted successfully", nil)
 }
 
 // GET /api/drivers/search

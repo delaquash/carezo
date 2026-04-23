@@ -3,6 +3,7 @@ package services
 import (
 	"crypto/rand"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -118,31 +119,41 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	if driverBookingCount > 0 {
 		return nil, errors.New("Driver is not available for the selected dates")
 	}
-
-
 	var rateToUse float64
-	switch req.PickupDate.Weekday() {
+
+	// unmarshal JSONB into a real Go map BEFORE the switch
+	var rates map[string]float64
+	if err := json.Unmarshal([]byte(car.HourlyRate), &rates); err != nil {
+		return nil, fmt.Errorf("failed to parse hourly rate: %w", err)
+	}
+
+	// using the map in your switch
+	switch time.Now().Weekday() {
 	case time.Saturday, time.Sunday:
-	// weekend rate
-		if val, ok := car.HourlyRate["weekend"]; ok {
-			rateToUse = val.(float64)
+		// weekend rate
+		if val, ok := rates["weekend"]; ok {
+			rateToUse = val
 		}
 	default:
 		// weekday rate
-		if val, ok := car.HourlyRate["weekday"]; ok {
-			rateToUse = val.(float64)
+		if val, ok := rates["weekday"]; ok {
+			rateToUse = val
 		}
 	}
 
-	// safety check 
+	// safety check
 	if rateToUse == 0 {
 		return nil, errors.New("Car hourly rate is not configured correctly")
 	}
-	 // calculate pricing
-	duration         := req.ReturnDate.Sub(req.PickupDate)
-	totalHours       := math.Ceil(duration.Hours()) // partial hours round up
-	tripCost         := rateToUse * totalHours
-	totalAmount      := tripCost + car.CautionFee
+
+	if rateToUse == 0 {
+		return nil, fmt.Errorf("no rate configured for this day")
+	}
+	// calculate pricing
+	duration := req.ReturnDate.Sub(req.PickupDate)
+	totalHours := math.Ceil(duration.Hours()) // partial hours round up
+	tripCost := rateToUse * totalHours
+	totalAmount := tripCost + car.CautionFee
 	refundableAmount := car.CautionFee // caution fee is refundable on completion
 
 	// generate booking reference
@@ -150,7 +161,7 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	if err != nil {
 		return nil, err
 	}
-	// create booking 
+	// create booking
 	bookingID := uuid.New().String()
 
 	query = `
@@ -204,8 +215,7 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	return &booking, nil
 }
 
-
-func(s *BookingService) GetBookingByID(bookingID string) (*models.Booking, error) {
+func (s *BookingService) GetBookingByID(bookingID string) (*models.Booking, error) {
 	var booking models.Booking
 
 	query := `SELECT * FROM bookings WHERE id = $1`
@@ -221,18 +231,23 @@ func(s *BookingService) GetBookingByID(bookingID string) (*models.Booking, error
 }
 
 // GetUserBooking
-func (s *BookingService) GetUserBookings(userID string, status string, page, limit int)([]models.Booking, int, error) {
+func (s *BookingService) GetUserBookings(userID string, status string, page, limit int) ([]models.Booking, int, error) {
 	// default pagination
-	if page < 1  { page = 1 }
-	if limit < 1 { limit = 10 }
-	if limit > 50 { limit = 50 }
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	if limit > 50 {
+		limit = 50
+	}
 
 	var conditions []string
 	var args []interface{}
 	argCount := 1
 
-
-		conditions = append(conditions, fmt.Sprintf("user_id = $%d", argCount))
+	conditions = append(conditions, fmt.Sprintf("user_id = $%d", argCount))
 	args = append(args, userID)
 	argCount++
 
@@ -279,9 +294,8 @@ func (s *BookingService) GetUserBookings(userID string, status string, page, lim
 	return bookings, total, nil
 }
 
-
 // Cancel Booking
-func (s *BookingService) CancelBooking(bookingID string, userID string, reason string)error {
+func (s *BookingService) CancelBooking(bookingID string, userID string, reason string) error {
 	// fetch the booking
 
 	booking, err := s.GetBookingByID(bookingID)
@@ -295,7 +309,7 @@ func (s *BookingService) CancelBooking(bookingID string, userID string, reason s
 	}
 
 	// update status and set cancellation
-		query := `
+	query := `
 		UPDATE bookings
 		SET    status              = $1,
 		       cancellation_reason = $2
@@ -311,14 +325,13 @@ func (s *BookingService) CancelBooking(bookingID string, userID string, reason s
 	rows, _ := result.RowsAffected()
 
 	if rows == 0 {
-		return  errors.New("Booking not found or already deleted")
+		return errors.New("Booking not found or already deleted")
 	}
 
 	// new feature:- send cancellation email
 
 	return nil
 }
-
 
 // Called during payment initialization to save the Paystack
 // reference string into the booking row so we can find it later.
@@ -343,18 +356,17 @@ func (s *BookingService) StorePaymentReference(bookingID string, reference strin
 	return nil
 }
 
-
 // Called during payment verification to find the booking
 // using the Paystack reference string.
 
-func(s *BookingService) GetBookingByPaymentReference(reference string) (*models.Booking, error) {
+func (s *BookingService) GetBookingByPaymentReference(reference string) (*models.Booking, error) {
 	var booking models.Booking
 
 	query := `SELECT * FROM bookings WHERE payment_reference = $1`
 	err := database.DB.Get(&booking, query, reference)
 
 	if err != nil {
-		if err == sql.ErrNoRows{
+		if err == sql.ErrNoRows {
 			return nil, errors.New("Booking not found for this payment reference")
 		}
 		return nil, fmt.Errorf("Database error: %w", err)

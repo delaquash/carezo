@@ -86,7 +86,6 @@ func main() {
 			auth.POST("/reset-password", authHandler.ResetPassword)
 		}
 
-		// ================= PUBLIC CARS =================
 		cars := api.Group("/cars")
 		{
 			cars.GET("", carHandler.ListAllCars)
@@ -95,7 +94,6 @@ func main() {
 			cars.GET("/:id", carHandler.GetCar)
 		}
 
-		// ================= PUBLIC DRIVERS =================
 		drivers := api.Group("/drivers")
 		{
 			drivers.GET("", driverHandler.ListAllDrivers)
