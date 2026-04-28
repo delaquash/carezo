@@ -5,42 +5,43 @@ import (
 )
 
 type Car struct {
-	ID string `json:"id" db:"id"`
+    ID string `json:"id" db:"id"`
 
-	Model        string `json:"model" db:"model"`
-	Brand        string `json:"brand" db:"brand"`
-	Year         int    `json:"year"  db:"year"`
-	Color        string `json:"color" db:"color"`
-	LicencePlate string `json:"licence_plate" db:"license_plate"`
+    Model        string `json:"model" db:"model"`
+    Year         int    `json:"year" db:"year"`
+    Color        string `json:"color" db:"color"`
+    LicensePlate string `json:"license_plate" db:"license_plate"`
 
-	EngineOutput    *string `json:"engine_output,omitempty" db:"engine_output"`
-	Transmission    string  `json:"transmission" db:"transmission"`
-	FuelType        string  `json:"fuel_type" db:"fuel_type"`
-	SeatingCapacity int     `json:"seating_capacity" db:"seating_capacity"`
-	MaximumSpeed    *int    `json:"maximum_speed,omitempty" db:"maximum_speed"`
-	Mileage         int     `json:"mileage" db:"mileage"`
+    PassengerCapacity int `json:"passenger_capacity" db:"passenger_capacity"`
+    SeatingCapacity   int `json:"seating_capacity" db:"seating_capacity"`
 
-	DriverName   *string `json:"driver_name,omitempty" db:"driver_name"`
-	DriverNumber *string `json:"driver_number,omitempty" db:"driver_number"`
-	DriverMiles  *int    `json:"driver_miles,omitempty" db:"driver_miles"`
+    EngineOutput *string `json:"engine_output,omitempty" db:"engine_output"`
+    Transmission string  `json:"transmission" db:"transmission"`
+    FuelType     string  `json:"fuel_type" db:"fuel_type"`
+    MaximumSpeed *int    `json:"maximum_speed,omitempty" db:"maximum_speed"`
+    Mileage      int     `json:"mileage" db:"mileage"`
 
-	HourlyRate JSONB   `json:"hourly_rate" db:"hourly_rate"`
-	CautionFee float64 `json:"caution_fee" db:"caution_fee"`
+    DriverName   *string `json:"driver_name,omitempty" db:"driver_name"`
+    DriverNumber *string `json:"driver_number,omitempty" db:"driver_number"`
+    DriverMiles  *int    `json:"driver_miles,omitempty" db:"driver_miles"`
 
-	Features JSONB `json:"features" db:"features"`
+    HourlyRate JSONB   `json:"hourly_rate" db:"hourly_rate"`
+    CautionFee float64 `json:"caution_fee" db:"caution_fee"`
 
-	Images JSONB `json:"images" db:"images"`
+    Description *string `json:"description,omitempty" db:"description"`
 
-	IsAvailable     bool    `json:"is_available" db:"is_available"`
-	Status          string  `json:"status" db:"status"`
-	CurrentLocation *string `json:"current_location,omitempty" db:"current_location"`
+    Features JSONB `json:"features" db:"features"`
+    Images   JSONB `json:"images" db:"images"`
 
-	CreatedAt time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
-	DeletedAt *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
+    IsAvailable     bool    `json:"is_available" db:"is_available"`
+    Status          string  `json:"status" db:"status"`
+    CurrentLocation *string `json:"current_location,omitempty" db:"current_location"`
+
+    CreatedAt time.Time  `json:"created_at" db:"created_at"`
+    UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
+    DeletedAt *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
 }
 
-// type JSONB map[string]interface{}
 
 type HourlyRate struct {
 	Holiday float64 `json:"holiday"`
@@ -50,10 +51,10 @@ type HourlyRate struct {
 
 type CreateCarRequest struct {
 	Model           string     `json:"model" binding:"required"`
-	Brand           string     `json:"brand" binding:"required"`
+
 	Year            int        `json:"year" binding:"required,min=1900"`
 	Color           string     `json:"color" binding:"required"`
-	LicencePlate    string     `json:"license_plate" binding:"required"`
+	LicensePlate    string     `json:"license_plate" binding:"required"`
 	EngineOutput    *string    `json:"engine_output,omitempty"`
 	Transmission    string     `json:"transmission" binding:"required,oneof=automatic manual"`
 	FuelType        string     `json:"fuel_type" binding:"required,oneof=petrol diesel electric hybrid"`
@@ -72,7 +73,6 @@ type CreateCarRequest struct {
 
 type UpdateCarRequest struct {
 	Model           *string  `json:"model,omitempty"`
-	Brand           *string  `json:"brand,omitempty"`
 	Year            *int     `json:"year,omitempty"`
 	Color           *string  `json:"color,omitempty"`
 	LicensePlate    *string  `json:"license_plate,omitempty"`
@@ -85,7 +85,7 @@ type UpdateCarRequest struct {
 	DriverName      *string  `json:"driver_name,omitempty"`
 	DriverNumber    *string  `json:"driver_number,omitempty"`
 	DriverMiles     *int     `json:"driver_miles,omitempty"`
-	HourlyRate      JSONB    `json:"hourly_rate,omitempty"`
+	HourlyRate      *HourlyRate`json:"hourly_rate,omitempty"`
 	CautionFee      *float64 `json:"caution_fee,omitempty"`
 	Features        []string `json:"features,omitempty"`
 	IsAvailable     *bool    `json:"is_available,omitempty"`
@@ -94,7 +94,6 @@ type UpdateCarRequest struct {
 }
 
 type SearchCarsRequest struct {
-	Brand         *string  `form:"brand"`
 	Model         *string  `form:"model"`
 	MinYear       *int     `form:"min_year"`
 	MaxYear       *int     `form:"max_year"`

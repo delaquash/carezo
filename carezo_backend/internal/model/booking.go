@@ -95,7 +95,7 @@ type CarSummary struct {
 	Model        string    `json:"model"`
 	Brand        string    `json:"brand"`
 	Color        string    `json:"color"`
-	LicencePlate string    `json:"licence_plate"`
+	LicensePlate string    `json:"license_plate"`
 }
 
 type DriverSummary struct {
