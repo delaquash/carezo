@@ -12,8 +12,14 @@ import (
 type JSONB json.RawMessage
 
 
+func (j JSONB) MarshalJSON() ([]byte, error) {
+    if len(j) == 0 {
+        return []byte("null"), nil
+    }
+    return json.RawMessage(j).MarshalJSON()
+}
+
 func (j *JSONB) Scan(value interface{}) error {
-    // ✅ Add this — handles NULL columns from PostgreSQL
     if value == nil {
         *j = nil
         return nil
