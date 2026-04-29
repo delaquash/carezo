@@ -165,6 +165,7 @@ func(h *CarHandler) GetAvailableCars(c *gin.Context) {
 
 	if pickupDateStr == "" || returnDateStr == "" {
 		response.Error(c, http.StatusBadRequest, "Pick Up Date and ReturnDate are required")
+		return
 	}
 
 
