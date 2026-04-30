@@ -275,7 +275,7 @@ func (s *CarService) SearchCars(req *models.SearchCarsRequest) (*models.CarListR
 
 	var conditions []string
 	var args []interface{}
-	argCount := 1
+	argCount := 1 
 
 	// exclude deleted acrs
 	conditions = append(conditions, "deleted_at IS NULL")
