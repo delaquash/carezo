@@ -58,6 +58,8 @@ type Config struct {
 	// Paystack settings
 	PaystackSecretKey string
 	PaystackPublicKey string
+	PaystackWebhookSecret string
+
 
 	// Rate limiting settings
 	RateLimitRequests      int
@@ -133,6 +135,7 @@ func LoadConfig() *Config {
 		// Paystack
 		PaystackSecretKey: getEnv("PAYSTACK_SECRET_KEY", ""),
 		PaystackPublicKey: getEnv("PAYSTACK_PUBLIC_KEY", ""),
+		PaystackWebhookSecret: getEnv("PAYSTACK_WEBHOOK_SECRET", ""),
 
 		// Rate Limiting
 		RateLimitRequests:      getEnvAsInt("RATE_LIMIT_REQUESTS", 100),

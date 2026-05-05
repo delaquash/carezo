@@ -76,7 +76,7 @@ func main() {
 	// routes
 	api := router.Group("/api")
 	{
-		// ================= AUTH =================
+		//  AUTH 
 		auth := api.Group("/auth")
 		{
 			auth.POST("/register", authHandler.Register)
@@ -173,7 +173,7 @@ func main() {
 
 	}
 
-	// ================= SERVER =================
+	//  SERVER 
 	srv := &http.Server{
 		Addr:         ":" + cfg.AppPort,
 		Handler:      router,
@@ -190,7 +190,7 @@ func main() {
 		}
 	}()
 
-	// ================= GRACEFUL SHUTDOWN =================
+	// GRACEFUL SHUTDOWN 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
