@@ -105,7 +105,7 @@ func main() {
 
 		payment := api.Group("/payments")
 		{
-			payment.POST("/webhook", paymentHandler.HandleWebhook)
+			// payment.POST("/webhook", paymentHandler.HandleWebhook)
 			payment.POST("/initialize", middleware.AuthMiddleware(cfg), paymentHandler.InitializePayment)
 		}
 
