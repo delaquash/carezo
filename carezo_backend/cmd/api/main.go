@@ -71,6 +71,7 @@ func main() {
 	driverHandler := handlers.NewDriverHandler()
 	userHandler := handlers.NewUserHandler()
 	bookingHandler := handlers.NewBookingHandler()
+	paymentHandler := handlers.NewPaymentHandler(cfg)
 
 	// routes
 	api := router.Group("/api")
@@ -102,7 +103,13 @@ func main() {
 			drivers.GET("/:id/reviews", driverHandler.GetDriverReviews)
 		}
 
-		// ================= PROTECTED =================
+		payment := api.Group("/payments")
+		{
+			payment.POST("/webhook", paymentHandler.HandleWebhook)
+			payment.POST("/initialize", middleware.AuthMiddleware(cfg), paymentHandler.InitializePayment)
+		}
+
+		//  PROTECTED 
 		protected := api.Group("")
 		protected.Use(middleware.AuthMiddleware(cfg))
 		{
