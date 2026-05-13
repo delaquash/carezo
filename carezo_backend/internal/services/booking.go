@@ -41,10 +41,12 @@ func generateBookingReference() (string, error) {
 // CreateBooking by user
 func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingRequest) (*models.Booking, error) {
 	// validate date
-	now := time.Now()
-	if req.PickupDate.Before(now) {
-		return nil, errors.New("Pickup date must be in the future or future date")
+	// now := time.Now()
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	if req.PickupDate.UTC().Before(today) {
+		return nil, errors.New("Pickup date cannot be in the past")
 	}
+
 	if !req.ReturnDate.After(req.PickupDate) {
 		return nil, errors.New("Return date must be after pickup date")
 	}
@@ -89,7 +91,7 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	query = `
 		SELECT COUNT(*) FROM bookings
 		WHERE car_id        = $1
-		  AND status        NOT IN("cancelled", "completed")
+		  AND status        NOT IN('cancelled', 'completed')
 		  AND pickup_date < $3
 		  AND return_date > $2	
 	`
@@ -107,7 +109,7 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	query = `
 		SELECT COUNT(*) FROM bookings
 		WHERE driver_id        = $1
-		  AND status        NOT IN("cancelled", "completed")
+		  AND status        NOT IN('cancelled', 'completed')
 		  AND pickup_date < $3
 		  AND return_date > $2	
 	`
@@ -128,7 +130,7 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	}
 
 	// using the map in your switch
-	switch time.Now().Weekday() {
+	switch req.PickupDate().Weekday() {
 	case time.Saturday, time.Sunday:
 		// weekend rate
 		if val, ok := rates["weekend"]; ok {
@@ -146,9 +148,6 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 		return nil, errors.New("Car hourly rate is not configured correctly")
 	}
 
-	if rateToUse == 0 {
-		return nil, fmt.Errorf("no rate configured for this day")
-	}
 	// calculate pricing
 	duration := req.ReturnDate.Sub(req.PickupDate)
 	totalHours := math.Ceil(duration.Hours()) // partial hours round up

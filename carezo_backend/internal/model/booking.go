@@ -23,7 +23,7 @@ const (
 
 type Booking struct {
 	ID        string `json:"id" db:"id"`
-
+	BookingReference string `json:"booking_reference" db:"booking_reference"`
 	// foreign keys
 	UserID   uuid.UUID `json:"user_id" db:"user_id"`
     CarID    uuid.UUID `json:"car_id" db:"car_id"`
@@ -35,8 +35,6 @@ type Booking struct {
 	ReturnDate   time.Time `json:"return_date" db:"return_date"`
 	ActualReturnDate time.Time `json:"actual_return_date,omitempty" db:"actual_return_date"`
 
-
-	TotalHours  int `json:"total_hours" db:"total_hours"`
 	Destination string `json:"destination" db:"destination"`
 
 	PickUpLocation *string  `json:"pickup_location" db:"pickup_location"`
@@ -55,8 +53,8 @@ type Booking struct {
 
 	Status string `json:"status" db:"status"`
 
-	CancellationReason *string `json:"cancellation_reason" db:"cancellation_reason"`
-	SpecialRequests    *string `json:"special_requests" db:"special_requests"`
+	CancellationReason *string `json:"cancellation_reason,omitempty" db:"cancellation_reason"`
+	SpecialRequests    *string `json:"special_requests,omitempty" db:"special_requests"`
 
 	// Timestamps
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
