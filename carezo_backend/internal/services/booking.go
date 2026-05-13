@@ -50,12 +50,27 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	if !req.ReturnDate.After(req.PickupDate) {
 		return nil, errors.New("Return date must be after pickup date")
 	}
+
+	// wrap everything in DB transaction
+
+	tx, err := database.DB.Beginx()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
+	}
+
+	// roll back on error before commit()
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
 	// fetch car after confirming car exist and pricing
 	var car models.Car
 
-	query := `SELECT * FROM cars WHERE id = $1 AND deleted_at IS NULL`
+	err =tx.Get(&car, `SELECT * FROM cars WHERE id = $1 AND deleted_at IS NULL`, req.CarID)
 
-	err := database.DB.Get(&car, query, req.CarID)
+	// err := database.DB.Get(&car, query, req.CarID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -71,66 +86,65 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	// fetch driver
 
 	var driver models.Driver
-	query = `SELECT * FROM drivers WHERE id = $1 AND deleted_at IS NULL`
-	err = database.DB.Get(&driver, query, req.DriverID)
+	err =tx.Get(&driver, `SELECT * FROM drivers WHERE id = $1 AND deleted_at IS NULL`, string, req.DriverID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.New("Driver not found")
+			return nil, errors.New("driver not found")
 		}
-		return nil, fmt.Errorf("Database error: %w", err)
+		return nil, fmt.Errorf("database error: %w", err)
 	}
 
 	if !driver.IsAvailable {
-		return nil, errors.New("Driver is currently maarked as unavailable")
+		return nil, errors.New("driver is currently unavailable")
 	}
 
 	// check for car overlapping
 	var carBookingCount int
 
-	query = `
+	err =tx.Get(&carBookingCount, `
 		SELECT COUNT(*) FROM bookings
 		WHERE car_id        = $1
 		  AND status        NOT IN('cancelled', 'completed')
 		  AND pickup_date < $3
 		  AND return_date > $2	
-	`
-	err = database.DB.Get(&carBookingCount, query, req.CarID, req.PickupDate, req.ReturnDate)
+	`, req.CarID, req.PickupDate, req.ReturnDate)
 
 	if err != nil {
-		return nil, fmt.Errorf("Database error checking car availability: %w", err)
+		return nil, fmt.Errorf("error checking car availability: %w", err)
 	}
 	if carBookingCount > 0 {
-		return nil, errors.New("Car is not available for the selected dates")
+		return nil, errors.New("car is not available for the selected dates")
 	}
 
 	// check driver availability
 	var driverBookingCount int
-	query = `
+	err =tx.Get(&driverBookingCount, `
 		SELECT COUNT(*) FROM bookings
 		WHERE driver_id        = $1
 		  AND status        NOT IN('cancelled', 'completed')
 		  AND pickup_date < $3
 		  AND return_date > $2	
-	`
-	err = database.DB.Get(&driverBookingCount, query, req.DriverID, req.PickupDate, req.ReturnDate)
+	`, req.DriverID, req.PickupDate, req.ReturnDate)
 
 	if err != nil {
-		return nil, fmt.Errorf("Database error checking driver availability: %w", err)
+		return nil, fmt.Errorf("error checking driver availability: %w", err)
 	}
 	if driverBookingCount > 0 {
 		return nil, errors.New("Driver is not available for the selected dates")
 	}
-	var rateToUse float64
+
+	// calculate rate
 
 	// unmarshal JSONB into a real Go map BEFORE the switch
 	var rates map[string]float64
-	if err := json.Unmarshal([]byte(car.HourlyRate), &rates); err != nil {
+	if err = json.Unmarshal([]byte(car.HourlyRate), &rates); err != nil {
 		return nil, fmt.Errorf("failed to parse hourly rate: %w", err)
 	}
 
 	// using the map in your switch
-	switch req.PickupDate().Weekday() {
+	var rateToUse float64
+	switch req.PickupDate.Weekday() {
 	case time.Saturday, time.Sunday:
 		// weekend rate
 		if val, ok := rates["weekend"]; ok {
@@ -145,25 +159,27 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 
 	// safety check
 	if rateToUse == 0 {
-		return nil, errors.New("Car hourly rate is not configured correctly")
+		return nil, errors.New("car hourly rate is not configured correctly")
 	}
 
 	// calculate pricing
 	duration := req.ReturnDate.Sub(req.PickupDate)
-	totalHours := math.Ceil(duration.Hours()) // partial hours round up
+	totalHours := math.Ceil(duration.Hours())
 	tripCost := rateToUse * totalHours
 	totalAmount := tripCost + car.CautionFee
-	refundableAmount := car.CautionFee // caution fee is refundable on completion
+	refundableAmount := car.CautionFee 
+
 
 	// generate booking reference
 	ref, err := generateBookingReference()
 	if err != nil {
 		return nil, err
 	}
-	// create booking
+	// create and insert booking
 	bookingID := uuid.New().String()
+	var booking models.Booking
 
-	query = `
+	err =tx.Get(&booking, `
         INSERT INTO bookings (
             id,
             booking_reference,
@@ -184,11 +200,31 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
         ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
         )
-        RETURNING *
-    `
-
-	var booking models.Booking
-	err = database.DB.Get(&booking, query,
+        RETURNING
+		id,
+			booking_reference,
+			user_id,
+			car_id,
+			driver_id,
+			pickup_date,
+			return_date,
+			actual_return_date,
+			destination,
+			pickup_location,
+			hourly_rate,
+			caution_fee,
+			total_amount,
+			refundable_amount,
+			payment_status,
+			payment_reference,
+			paid_at,
+			refunded_at,
+			status,
+			cancellation_reason,
+			special_requests,
+			created_at,
+			updated_at
+    `,
 		bookingID,
 		ref,
 		userID,
@@ -208,7 +244,13 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create booking: %w", err)
+		return nil, fmt.Errorf("failed to create booking: %w", err)
+	}
+
+	// commit, nothing is written to the db until commit()
+	// if Commit() fails, defer Rollback() above cleans everything up
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return &booking, nil
