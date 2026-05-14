@@ -259,14 +259,13 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 func (s *BookingService) GetBookingByID(bookingID string) (*models.Booking, error) {
 	var booking models.Booking
 
-	query := `SELECT * FROM bookings WHERE id = $1`
-	err := database.DB.Get(&booking, query, bookingID)
+	err := database.DB.Get(&booking, `SELECT * FROM bookings WHERE id = $1`, bookingID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.New("Booking not found")
+			return nil, errors.New("booking not found")
 		}
-		return nil, fmt.Errorf("Databse error: %w", err)
+		return nil, fmt.Errorf("databse error: %w", err)
 	}
 	return &booking, nil
 }
@@ -298,37 +297,30 @@ func (s *BookingService) GetUserBookings(userID string, status string, page, lim
 		argCount++
 	}
 
+	whereClause := conditions[0]
+	for i := 1; i < len(conditions); i++ {
+		whereClause += " AND " + conditions[i]
+	}
 	// ── count total (for pagination meta) ───────────────────────────────
-	countQuery := "SELECT COUNT(*) FROM bookings WHERE "
-	for i, cond := range conditions {
-		if i > 0 {
-			countQuery += " AND "
-		}
-		countQuery += cond
+	
+	var total int
+	if err := database.DB.Get(&total, "SELECT COUNT(*) FROM bookings WHERE "+whereClause, args...); err != nil {
+		return nil, 0, fmt.Errorf(" error counting bookings: %w", err)
 	}
 
-	var total int
-	err := database.DB.Get(&total, countQuery, args...)
-	if err != nil {
-		return nil, 0, fmt.Errorf("Database error counting bookings: %w", err)
-	}
 
 	// ── fetch the page ──────────────────────────────────────────────────
 	offset := (page - 1) * limit
 
-	dataQuery := "SELECT * FROM bookings WHERE "
-	for i, cond := range conditions {
-		if i > 0 {
-			dataQuery += " AND "
-		}
-		dataQuery += cond
-	}
-	dataQuery += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", argCount, argCount+1)
+	dataQuery := fmt.Sprintf(
+		"SELECT * FROM bookings WHERE %s ORDER BY created_at DESC LIMIT $%d OFFSET $%d",
+		whereClause, argCount, argCount+1,
+	)
+	
 	args = append(args, limit, offset)
 
 	var bookings []models.Booking
-	err = database.DB.Select(&bookings, dataQuery, args...)
-	if err != nil {
+	if err := database.DB.Select(&bookings, dataQuery, args...); err != nil {
 		return nil, 0, fmt.Errorf("Database error fetching bookings: %w", err)
 	}
 
@@ -346,21 +338,19 @@ func (s *BookingService) CancelBooking(bookingID string, userID string, reason s
 
 	// only pending booking or confirmed booking can be cancelled
 	if booking.Status != models.BookingStatusPending && booking.Status != models.BookingStatusConfirmed {
-		return fmt.Errorf("Only pending or confirmed bookings can be cancelled (current status: %s)", booking.Status)
+		return fmt.Errorf("only pending or confirmed bookings can be cancelled (current status: %s)", booking.Status)
 	}
 
 	// update status and set cancellation
-	query := `
+	result, err := database.DB.Exec( `
 		UPDATE bookings
 		SET    status              = $1,
 		       cancellation_reason = $2
 		WHERE  id                  = $3
-	`
-
-	result, err := database.DB.Exec(query, models.BookingStatusCancelled, reason, bookingID)
+	`, models.BookingStatusCancelled, reason, bookingID)
 
 	if err != nil {
-		return fmt.Errorf("Failed to cancel booking: %w", err)
+		return fmt.Errorf("failed to cancel booking: %w", err)
 	}
 
 	rows, _ := result.RowsAffected()
@@ -378,13 +368,11 @@ func (s *BookingService) CancelBooking(bookingID string, userID string, reason s
 // reference string into the booking row so we can find it later.
 
 func (s *BookingService) StorePaymentReference(bookingID string, reference string) error {
-	query := `
+	result, err := database.DB.Exec(`
 		UPDATE bookings
 		SET	   payment_reference = $1
 		WHERE  id 				 = $2	
-	`
-
-	result, err := database.DB.Exec(query, reference, bookingID)
+	`, reference, bookingID)
 	if err != nil {
 		return fmt.Errorf("Failed to store payment reference: %w", err)
 	}
