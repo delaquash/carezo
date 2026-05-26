@@ -2,15 +2,15 @@ package handlers
 
 import (
 	"net/http"
+
 	models "github.com/delaquash/carezo/internal/model"
 	"github.com/delaquash/carezo/internal/services"
 	response "github.com/delaquash/carezo/pkg"
 	"github.com/gin-gonic/gin"
 )
- 
 
 type BookingHandler struct {
-	bookingService *services.BookingService 
+	bookingService *services.BookingService
 }
 
 func NewBookingHandler() *BookingHandler {
@@ -19,6 +19,7 @@ func NewBookingHandler() *BookingHandler {
 	}
 }
 
+// route
 // POST /api/bookings
 func (h *BookingHandler) CreateBooking(c *gin.Context) {
 	// get auth user from jwt middleware
@@ -31,7 +32,7 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 
 	var req models.CreateBookingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid Request: " +err.Error())
+		response.Error(c, http.StatusBadRequest, "Invalid Request: "+err.Error())
 		return
 	}
 
@@ -42,7 +43,6 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 	}
 	response.Success(c, http.StatusCreated, "Booking created successfully", booking)
 }
-
 
 func (h *BookingHandler) GetBooking(c *gin.Context) {
 	bookingID := c.Param("id")
@@ -60,8 +60,7 @@ func (h *BookingHandler) GetBooking(c *gin.Context) {
 // GET /api/bookings
 //    ?status=pending&page=1&limit=10
 
-
-func(h *BookingHandler) ListUserBooking(c *gin.Context) {
+func (h *BookingHandler) ListUserBooking(c *gin.Context) {
 	// get authenticated user ID from jwt middleware
 	userID, exists := c.Get("user_id")
 
@@ -78,37 +77,41 @@ func(h *BookingHandler) ListUserBooking(c *gin.Context) {
 		return
 	}
 
-		// apply defaults here so we can use them in the meta
-	if req.Page  < 1  { req.Page  = 1  }
-	if req.Limit < 1  { req.Limit = 10 }
-	if req.Limit > 50 { req.Limit = 50 }
+	// apply defaults here so we can use them in the meta
+	if req.Page < 1 {
+		req.Page = 1
+	}
+	if req.Limit < 1 {
+		req.Limit = 10
+	}
+	if req.Limit > 50 {
+		req.Limit = 50
+	}
 
+	bookings, total, err := h.bookingService.GetUserBookings(userID.(string), req.Status, req.Page, req.Limit)
 
-	bookings, total, err := h.bookingService.GetUserBookings(userID.(string), req.Status, req.Page, req.Limit) 
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
 
-		if err != nil {
-			response.Error(c, http.StatusInternalServerError, err.Error())
-			return
-		}
+	// calcualte total pages
+	totalPages := total / req.Limit
 
-		// calcualte total pages
-		totalPages := total / req.Limit
+	if total%req.Limit != 0 {
+		totalPages++
+	}
 
-		if total % req.Limit != 0 {
-			totalPages++
-		}
-
-		response.Success(c, http.StatusOK, "Booking retrieved successfully", gin.H {
-			"bookings" : bookings,
-			"meta": gin.H {
-				"total":  total,
-				"page":   req.Page,
-				"limit":  req.Limit,
-				"total_pages": totalPages,
-			},
-		})
+	response.Success(c, http.StatusOK, "Booking retrieved successfully", gin.H{
+		"bookings": bookings,
+		"meta": gin.H{
+			"total":       total,
+			"page":        req.Page,
+			"limit":       req.Limit,
+			"total_pages": totalPages,
+		},
+	})
 }
-
 
 //  POST /api/bookings/:id/cancel
 
