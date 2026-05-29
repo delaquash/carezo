@@ -86,7 +86,7 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	// fetch driver
 
 	var driver models.Driver
-	err =tx.Get(&driver, `SELECT * FROM drivers WHERE id = $1 AND deleted_at IS NULL`, string, req.DriverID)
+	err =tx.Get(&driver, `SELECT * FROM drivers WHERE id = $1 AND deleted_at IS NULL`, req.DriverID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -105,7 +105,8 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	err =tx.Get(&carBookingCount, `
 		SELECT COUNT(*) FROM bookings
 		WHERE car_id        = $1
-		  AND status        NOT IN('cancelled', 'completed')
+		  AND cancelled_at IS NULL
+		  AND status != 'completed'
 		  AND pickup_date < $3
 		  AND return_date > $2	
 	`, req.CarID, req.PickupDate, req.ReturnDate)
@@ -122,7 +123,8 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	err =tx.Get(&driverBookingCount, `
 		SELECT COUNT(*) FROM bookings
 		WHERE driver_id        = $1
-		  AND status        NOT IN('cancelled', 'completed')
+		  AND cancelled_at IS NULL
+		  AND status != 'completed'
 		  AND pickup_date < $3
 		  AND return_date > $2	
 	`, req.DriverID, req.PickupDate, req.ReturnDate)
@@ -301,7 +303,7 @@ func (s *BookingService) GetUserBookings(userID string, status string, page, lim
 	for i := 1; i < len(conditions); i++ {
 		whereClause += " AND " + conditions[i]
 	}
-	// ── count total (for pagination meta) ───────────────────────────────
+	//  count total (for pagination meta) 
 	
 	var total int
 	if err := database.DB.Get(&total, "SELECT COUNT(*) FROM bookings WHERE "+whereClause, args...); err != nil {
@@ -309,7 +311,7 @@ func (s *BookingService) GetUserBookings(userID string, status string, page, lim
 	}
 
 
-	// ── fetch the page ──────────────────────────────────────────────────
+	//  fetch the page 
 	offset := (page - 1) * limit
 
 	dataQuery := fmt.Sprintf(

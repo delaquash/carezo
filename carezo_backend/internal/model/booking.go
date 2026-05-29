@@ -48,7 +48,7 @@ type Booking struct {
 	// payment
 	PaymentStatus string `json:"payment_status" db:"payment_status"`
 	PaymentReference *string `json:"payment_reference" db:"payment_reference"`
-	PaidAt   *time.Time `json:"paid_at," db:"paid_at"`
+	PaidAt   *time.Time `json:"paid_at" db:"paid_at"`
 	RefundedAt  *time.Time `json:"refunded_at" db:"refunded_at"`
 
 	Status string `json:"status" db:"status"`
