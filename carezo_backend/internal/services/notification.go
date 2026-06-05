@@ -94,3 +94,18 @@ func (s *NotificationService) MarkAllRead(userID string) error {
 	return nil
 }
 
+func (s *NotificationService) MarkOneread(notificationID, userID string) error {
+	query := `
+	UPDATE notifications
+	SET is_read= true, updateD_at = CURRENT_TIMESTAMP
+	WHERE id =$1 AND user_id = $2
+
+	`
+
+	_, err := database.DB.Exec(query, notificationID, userID)
+	if err != nil {
+		return  fmt.Errorf("Failed to mark notification as read: %w", err)
+	}
+
+	return nil
+}
