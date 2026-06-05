@@ -62,3 +62,35 @@ func (s *NotificationService) GetUserNotification(userID string)([]models.Notifi
 
 	return notifications, nil
 }
+
+// to get the number of unread messages
+func (s *NotificationService) GetUnreadCount(userID string)(int, error) {
+	var count int
+	query := `
+		SELECT COUNT(*) FROM notifications
+		WHERE user_id = $1 AND is_read = false
+	`
+
+	err := database.DB.Get(&count, query, userID)
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to count unread notification: %w", err)
+	}
+	return count, nil
+}
+
+// to mark all notification for users as read
+func (s *NotificationService) MarkAllRead(userID string) error {
+	query := `
+	UPDATE notifications
+	SET is_read= true, updated_at = CURRENT_TIMESTAMP
+	WHERE user_id = $1 AND is_read = false
+	`
+	_, err := database.DB.Exec(query, userID)
+
+	if err != nil {
+		return fmt.Errorf("Failed to mark notifications as read: %w", err)
+	}
+	return nil
+}
+
