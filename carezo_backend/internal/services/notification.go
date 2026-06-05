@@ -43,3 +43,22 @@ func (s *NotificationService) CreateNotification(req models.CreateNotificationRe
 	}
 	return  nil
 }
+
+
+func (s *NotificationService) GetUserNotification(userID string)([]models.Notification, error) {
+	var notifications []models.Notification
+
+	query := `
+		SELECT * FROM notifications
+		WHERE user_id = $1
+		ORDER BY created_at DESC
+		LIMIT 50
+	`
+
+	err := database.DB.Select(&notifications, query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to fetch notification: %w", err)
+	}
+
+	return notifications, nil
+}
