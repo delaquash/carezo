@@ -35,7 +35,7 @@ func(h *NotificationHandler) GetNotifications(c *gin.Context) {
 	// return unread count so FE can update badge
 	unreadCount, _ := h.notificationService.GetUnreadCount(userID.(string))
 
-	response.Success(c, http.StatusOK, "notifications retrieved", gin.H {
+	response.Success(c, http.StatusOK, "notifications retrieved", gin. H {
 		"notifications": notification,
 		"unread_count" : unreadCount,
 	})

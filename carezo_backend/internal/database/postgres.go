@@ -25,8 +25,8 @@ func ConnectPostgres(cfg *configs.Config) (*sqlx.DB, error) {
 		return nil, fmt.Errorf("Failed to connect to database: %w", err)
 	}
 
-	db.SetMaxOpenConns(25)  //Max numb of open connection to db
-	db.SetMaxIdleConns(5)  //Max number of idle conn
+	db.SetMaxOpenConns(25)  
+	db.SetMaxIdleConns(5)  
 	db.SetConnMaxIdleTime(5 * time.Minute)
 
 
@@ -35,7 +35,7 @@ func ConnectPostgres(cfg *configs.Config) (*sqlx.DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	log.Println("✅ Connected to PostgreSQL successfully")
+	log.Println("Connected to PostgreSQL successfully")
 	
 	// Store in global variable for easy access
 	DB = db
