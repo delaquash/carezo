@@ -437,3 +437,49 @@ func (s *CarService) GetAvailableCars(pickupDate, returnDate time.Time) ([]*mode
 
 	return cars, nil
 }
+
+func (s *CarService) GetNearbyCar(city string, page int, perPage int) ([]*models.Car, int, error) {
+	if page < 1 {
+		page = 0
+	}
+
+	if perPage < 1 {
+		perPage = 10
+	}
+// Skip first 10 rows and start from row 11.
+	offset := (page -1) * perPage
+
+	
+	// city = "Lagos" becomes "%Lagos%" Matches: Lagos, Lagos Island, Lagos Mainland
+
+	searchCity := "%" + city + "%"
+
+	var total int
+
+	err := database.DB.Get(&total, `
+		SELECT COUNT(*) FROM cars
+		WHERE LOWER(current_location) ILIKE LOWER($1)
+			AND is_available = true
+			AND deleted_at IS NULL
+	`, searchCity)
+
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count nearby cars: %w", err)
+	}
+
+	var cars []*models.Car
+
+	err = database.DB.Select(&cars, `
+		SELECT * FROM cars
+		WHERE LOWER(current_location) ILIKE LOWER($1)
+		  AND is_available = true
+		  AND deleted_at IS NULL
+		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3
+	`, searchCity, perPage, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to fetch nearby cars: %w", err)
+	}
+ 
+	return cars, total, nil
+ }
