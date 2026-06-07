@@ -201,3 +201,42 @@ func(h *CarHandler) GetAvailableCars(c *gin.Context) {
 		"total":       len(cars),
 	})
 }
+
+func (h *CarHandler) GetNearByCars(c *gin.Context){
+	city := c.Query("city")
+
+	if city == "" {
+		response.Error(c, http.StatusBadRequest, "city query parameter is required")
+		return
+	}
+
+	page := 1
+	perPage := 10
+
+	if p, ok := c.GetQuery("page"); ok {
+		fmt.Sscanf(p, "%d", &page)
+	}
+
+	if pp, ok := c.GetQuery("per_page"); ok {
+		fmt.Scanf(pp, "%d", &perPage)
+	}
+
+	cars, total , err := h.carService.GetNearbyCar(city,page,perPage)
+
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+	}
+
+	totalPages := (total + perPage - 1)/perPage
+
+	response.Success(c, http.StatusOK, "nearby cars retrieved", gin.H {
+		"cars": cars,
+		"city": city,
+		"total": total,
+		"meta": gin.H{
+			"page": page,
+			"per_page": perPage,
+			"total_pages": totalPages,
+		},
+	})
+}

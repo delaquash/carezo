@@ -275,7 +275,7 @@ func (s *CarService) SearchCars(req *models.SearchCarsRequest) (*models.CarListR
 
 	var conditions []string
 	var args []interface{}
-	argCount := 1 
+	argCount := 1
 
 	// exclude deleted acrs
 	conditions = append(conditions, "deleted_at IS NULL")
@@ -446,10 +446,9 @@ func (s *CarService) GetNearbyCar(city string, page int, perPage int) ([]*models
 	if perPage < 1 {
 		perPage = 10
 	}
-// Skip first 10 rows and start from row 11.
-	offset := (page -1) * perPage
+	// Skip first 10 rows and start from row 11.
+	offset := (page - 1) * perPage
 
-	
 	// city = "Lagos" becomes "%Lagos%" Matches: Lagos, Lagos Island, Lagos Mainland
 
 	searchCity := "%" + city + "%"
@@ -487,4 +486,70 @@ func (s *CarService) GetNearbyCar(city string, page int, perPage int) ([]*models
 	}
 	// return matching cars, total number found and no error
 	return cars, total, nil
- }
+}
+
+func (s *CarService) GetPopularCars(page, perPage int) ([]*models.Car, int, error) {
+	if page < 1 {
+		page = 1
+	}
+
+	if perPage < 1 {
+		perPage = 10
+	}
+
+	// pqge = 3
+	// perPage = 10
+	// offset = (3 - 1) * 10
+	// offset = 20
+	// Skip first 20 rows
+	// Start from row 21
+	offset := (page - 1) * perPage
+
+	// variable to hold total count
+	var total int
+
+	// run sql and store result in total
+	err := database.DB.Get(&total, `
+		SELECT COUNT(*) FROM cars 
+			WHERE is_available = true
+			AND deleted_at = NULL
+	`)
+	// if sql fails 
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count popular cars: %w", err)
+	}
+
+	// create car slice
+
+	var cars []*models.Car
+
+	// sql query
+
+	err = database.DB.Select(&cars, `
+		SELECT 
+			c.*,
+			COALESCE(b.booking_count, 0) AS total_bookings
+		FROM cars c
+		LEFT JOIN (
+			SELECT car_id, COUNT(*) AS booking_count
+			FROM bookings
+			// ignore cancelled booking
+			WHERE status NOT IN("cancelled)
+			GROUP BY car_id
+		) b ON b.car_id = c.id
+		//  only available cars
+		 WHERE c.is_available = true
+		 	AND c.deleted_at IS NULL
+			// sort by 
+		ORDER BY (
+			COALESCE(b.booking_count, 0) * 0.4
+		) DESC
+		 LIMIT $1 OFFSET $2
+	`, perPage, offset)
+	// return error if failed to fetch
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to fetch popular cars: %w", err)
+	}
+	// return popular cars, the total and no error
+	return cars, total, nil
+}
