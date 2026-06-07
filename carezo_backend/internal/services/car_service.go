@@ -456,6 +456,7 @@ func (s *CarService) GetNearbyCar(city string, page int, perPage int) ([]*models
 
 	var total int
 
+	// execute sql query and store result in total
 	err := database.DB.Get(&total, `
 		SELECT COUNT(*) FROM cars
 		WHERE LOWER(current_location) ILIKE LOWER($1)
@@ -463,12 +464,14 @@ func (s *CarService) GetNearbyCar(city string, page int, perPage int) ([]*models
 			AND deleted_at IS NULL
 	`, searchCity)
 
+	// if query fails return no cars, zero count and the error
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count nearby cars: %w", err)
 	}
-
+	// slice to store cars
 	var cars []*models.Car
 
+	// fetch actual car record
 	err = database.DB.Select(&cars, `
 		SELECT * FROM cars
 		WHERE LOWER(current_location) ILIKE LOWER($1)
@@ -477,9 +480,11 @@ func (s *CarService) GetNearbyCar(city string, page int, perPage int) ([]*models
 		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3
 	`, searchCity, perPage, offset)
+
+	// if query failed
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to fetch nearby cars: %w", err)
 	}
- 
+	// return matching cars, total number found and no error
 	return cars, total, nil
  }
