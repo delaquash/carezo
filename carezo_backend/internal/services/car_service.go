@@ -533,14 +533,11 @@ func (s *CarService) GetPopularCars(page, perPage int) ([]*models.Car, int, erro
 		LEFT JOIN (
 			SELECT car_id, COUNT(*) AS booking_count
 			FROM bookings
-			// ignore cancelled booking
-			WHERE status NOT IN("cancelled)
+			WHERE status NOT IN("cancelled")
 			GROUP BY car_id
 		) b ON b.car_id = c.id
-		//  only available cars
 		 WHERE c.is_available = true
 		 	AND c.deleted_at IS NULL
-			// sort by 
 		ORDER BY (
 			COALESCE(b.booking_count, 0) * 0.4
 		) DESC
