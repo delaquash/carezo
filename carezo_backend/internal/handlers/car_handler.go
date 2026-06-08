@@ -201,7 +201,7 @@ func(h *CarHandler) GetAvailableCars(c *gin.Context) {
 		"total":       len(cars),
 	})
 }
-
+// GET /api/cars/nearby?city=Lagos&page=1&per_page=10
 func (h *CarHandler) GetNearByCars(c *gin.Context){
 	city := c.Query("city")
 
@@ -236,6 +236,38 @@ func (h *CarHandler) GetNearByCars(c *gin.Context){
 		"meta": gin.H{
 			"page": page,
 			"per_page": perPage,
+			"total_pages": totalPages,
+		},
+	})
+}
+
+// GET /api/cars/popular?page=1&per_page=10
+func (h *CarHandler) GetPopularCars(c *gin.Context){
+	page := 1
+	perPage := 10
+
+	if p, ok := c.GetQuery("page"); ok {
+		fmt.Sscanf(p, "%d", &page)
+	}
+
+	if pp, ok :=c.GetQuery("per_page"); ok {
+		fmt.Sscanf(pp, "%d", &perPage)
+	}
+
+	cars, total, err := h.carService.GetPopularCars(page, perPage)
+
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+	}
+
+	totalPages := (total + perPage -1)/perPage
+
+	response.Success(c, http.StatusOK, "popular cars retrieved", gin.H{
+		"cars":  cars,
+		"total": total,
+		"meta": gin.H{
+			"page":        page,
+			"per_page":    perPage,
 			"total_pages": totalPages,
 		},
 	})
