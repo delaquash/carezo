@@ -31,9 +31,9 @@ func main() {
 
 	// Run seeder after DB is ready for admin user
 
-	log.Println("🔥 ABOUT TO RUN SEEDER")
+	log.Println(" ABOUT TO RUN SEEDER")
 	database.SeedAdminUser(db, cfg)
-	log.Println("🔥 SEEDER FINISHED")
+	log.Println(" SEEDER FINISHED")
 
 	// connect to redis
 	redis, err := database.ConnectRedis(cfg)
@@ -138,7 +138,9 @@ func main() {
 				notifications.GET("", notificationHandler.GetNotifications)            // GET  /api/notifications
 				notifications.GET("/unread-count", notificationHandler.GetUnreadCount) // GET  /api/notifications/unread-count
 				notifications.PUT("/read-all", notificationHandler.MarkAllRead)        // PUT  /api/notifications/read-all
-				notifications.PUT("/:id/read", notificationHandler.MarkOneRead)        // PUT  /api/notifications/:id/read
+				notifications.PUT("/:id/read", notificationHandler.MarkOneRead)
+				notifications.DELETE("/:id", notificationHandler.DeleteNotification) // ← NEW
+				notifications.DELETE("", notificationHandler.DeleteAllNotification)  // PUT  /api/notifications/:id/read
 			}
 
 			bookings := protected.Group("/bookings")

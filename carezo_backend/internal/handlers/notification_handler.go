@@ -98,3 +98,39 @@ func (h *NotificationHandler) GetUnreadCount(c *gin.Context){
 		"unread_count":count,
 	})
 }
+
+
+func (h *NotificationHandler) DeleteNotification(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	notificationID := c.Param("id")
+
+	if err := h.notificationService.DeleteNotification(notificationID, userID.(string)); err != nil {
+		response.Error(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "notification deleted", nil)
+
+} 
+
+func (s *NotificationHandler) DeleteAllNotification(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	if err := s.notificationService.DeleteAllNotification(userID.(string)); err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "all notification deleted", nil)
+}
