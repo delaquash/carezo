@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/delaquash/carezo/configs"
@@ -25,6 +26,29 @@ func NewAuthService(cfg *configs.Config) *AuthService {
 		otpService:   NewOTPService(cfg),
 		emailService: NewEmailService(cfg),
 	}
+}
+
+func validatePasswordStrength(password string) error {
+	if len(password) < 8 {
+		return  errors.New("password must be at least 8 characters")
+	}
+
+	if matched, _ := regexp.MatchString(`[a-z]`, password); !matched {
+		return errors.New("password must contain at least one lowercase letter")
+	}
+
+	if matched, _ := regexp.MatchString(`[A-Z]`, password); !matched {
+		return errors.New("password must contain at least one uppercase letter")
+	}
+
+	if matched, _ := regexp.MatchString(`[0-9]`, password); !matched {
+		return errors.New("password must contain at least one number")
+	}
+
+	if matched, _ := regexp.MatchString(`[^A-Za-z0-9]`, password); !matched {
+		return errors.New("password must contain at least one special character (!@#$%^&*)")
+	}
+	return nil
 }
 
 // Register creates a new user account and sends OTP via email
