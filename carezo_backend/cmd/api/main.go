@@ -135,12 +135,12 @@ func main() {
 			}
 			notifications := protected.Group("/notifications")
 			{
-				notifications.GET("", notificationHandler.GetNotifications)            // GET  /api/notifications
-				notifications.GET("/unread-count", notificationHandler.GetUnreadCount) // GET  /api/notifications/unread-count
-				notifications.PUT("/read-all", notificationHandler.MarkAllRead)        // PUT  /api/notifications/read-all
+				notifications.GET("", notificationHandler.GetNotifications)            
+				notifications.GET("/unread-count", notificationHandler.GetUnreadCount) 
+				notifications.PUT("/read-all", notificationHandler.MarkAllRead)        
 				notifications.PUT("/:id/read", notificationHandler.MarkOneRead)
-				notifications.DELETE("/:id", notificationHandler.DeleteNotification) // ← NEW
-				notifications.DELETE("", notificationHandler.DeleteAllNotification)  // PUT  /api/notifications/:id/read
+				notifications.DELETE("/:id", notificationHandler.DeleteNotification) 
+				notifications.DELETE("", notificationHandler.DeleteAllNotification)  
 			}
 
 			bookings := protected.Group("/bookings")
@@ -178,7 +178,7 @@ func main() {
 			users := admin.Group("/users")
 			{
 				users.GET("", userHandler.ListAllUsers)
-				users.GET("/:id", userHandler.GetUserByID) // fixed
+				users.GET("/:id", userHandler.GetUserByID) 
 				users.PUT("/:id/status", userHandler.UpdateUserStatus)
 			}
 		}

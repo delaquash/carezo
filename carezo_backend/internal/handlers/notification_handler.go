@@ -99,7 +99,7 @@ func (h *NotificationHandler) GetUnreadCount(c *gin.Context){
 	})
 }
 
-
+// DELETE /api/notification/:id
 func (h *NotificationHandler) DeleteNotification(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 
@@ -118,7 +118,7 @@ func (h *NotificationHandler) DeleteNotification(c *gin.Context) {
 	response.Success(c, http.StatusOK, "notification deleted", nil)
 
 } 
-
+// DELETE /api/notification
 func (s *NotificationHandler) DeleteAllNotification(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 
