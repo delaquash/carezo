@@ -72,6 +72,10 @@ func (s *AuthService) Register(req *models.RegisterRequest) error {
 		return errors.New("email is already registered")
 	}
 
+	// 2. Validate password strength\
+	if err := validatePasswordStrength(req.Password); err != nil {
+		return err 
+	}
 	// hashed password
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
