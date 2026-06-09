@@ -72,11 +72,12 @@ func main() {
 	userHandler := handlers.NewUserHandler()
 	bookingHandler := handlers.NewBookingHandler()
 	paymentHandler := handlers.NewPaymentHandler(cfg)
+	notificationHandler := handlers.NewNotificationHandler()
 
 	// routes
 	api := router.Group("/api")
 	{
-		//  AUTH 
+		//  AUTH
 		auth := api.Group("/auth")
 		{
 			auth.POST("/register", authHandler.Register)
@@ -93,6 +94,8 @@ func main() {
 			cars.GET("/search", carHandler.SearchCars)
 			cars.GET("/available", carHandler.GetAvailableCars)
 			cars.GET("/:id", carHandler.GetCar)
+			cars.GET("/nearby", carHandler.GetNearByCars)
+			cars.GET("/popular", carHandler.GetPopularCars)
 		}
 
 		drivers := api.Group("/drivers")
@@ -109,7 +112,7 @@ func main() {
 			payment.POST("/initialize", middleware.AuthMiddleware(cfg), paymentHandler.InitializePayment)
 		}
 
-		//  PROTECTED 
+		//  PROTECTED
 		protected := api.Group("")
 		protected.Use(middleware.AuthMiddleware(cfg))
 		{
@@ -129,6 +132,13 @@ func main() {
 				user.PUT("/update-profile", userHandler.UpdateProfile)
 				user.PUT("/complete-profile", userHandler.CompleteUserProfile)
 				user.DELETE("/delete-user", userHandler.DeleteAccount)
+			}
+			notifications := protected.Group("/notifications")
+			{
+				notifications.GET("", notificationHandler.GetNotifications)            // GET  /api/notifications
+				notifications.GET("/unread-count", notificationHandler.GetUnreadCount) // GET  /api/notifications/unread-count
+				notifications.PUT("/read-all", notificationHandler.MarkAllRead)        // PUT  /api/notifications/read-all
+				notifications.PUT("/:id/read", notificationHandler.MarkOneRead)        // PUT  /api/notifications/:id/read
 			}
 
 			bookings := protected.Group("/bookings")
@@ -173,7 +183,7 @@ func main() {
 
 	}
 
-	//  SERVER 
+	//  SERVER
 	srv := &http.Server{
 		Addr:         ":" + cfg.AppPort,
 		Handler:      router,
@@ -190,7 +200,7 @@ func main() {
 		}
 	}()
 
-	// GRACEFUL SHUTDOWN 
+	// GRACEFUL SHUTDOWN
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
