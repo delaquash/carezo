@@ -154,3 +154,37 @@ func (s *EmailService) SendBookingConfirmationEmail(
  
 	return s.sendEmail(to, subject, body)
 }
+func (s *NotificationService) DeleteNotification(notificationID, userID string) error {
+	query := `
+	DELETE FROM notifications
+	WHERE id = $1 
+		AND user_id = $2
+	`
+
+	result, err := database.DB.Exec(query, notificationID, userID)
+
+	if err != nil {
+		return fmt.Errorf("Failed to delete notification: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("Notification not found or not owned by user")
+	}
+
+	return nil
+}
+
+func (s *NotificationService) DeleteAllNotification(userID string) error {
+	query := `
+	DELETE FROM notifications
+	WHERE user_id = $1
+	`
+
+	_, err := database.DB.Exec(query, userID)
+
+	if err != nil {
+		return fmt.Errorf("Failed to delete notifications: %w", err)
+	}
+	return nil
+}
