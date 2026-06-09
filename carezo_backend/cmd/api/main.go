@@ -193,7 +193,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("🌐 Server listening on port %s", cfg.AppPort)
+		log.Printf("Server listening on port %s", cfg.AppPort)
 
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Failed to start server: %v", err)
