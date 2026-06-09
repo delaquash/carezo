@@ -17,20 +17,20 @@ import (
 )
 
 type PaymentService struct {
-	paystackSecretKey string
-	paystackBaseURL   string
-	bookingService    *BookingService
+	paystackSecretKey   string
+	paystackBaseURL     string
+	bookingService      *BookingService
 	notificationService *NotificationService
-	emailService  *EmailService
+	emailService        *EmailService
 }
 
 func NewPaymentService(paystackSecretKey string) *PaymentService {
 	return &PaymentService{
-		paystackSecretKey: paystackSecretKey,
-		paystackBaseURL:   "https://api.paystack.co",
-		bookingService:    NewBookingService(),
+		paystackSecretKey:   paystackSecretKey,
+		paystackBaseURL:     "https://api.paystack.co",
+		bookingService:      NewBookingService(),
 		notificationService: NewNotification(),
-		emailService: NewEmailService(configs.LoadConfig()),
+		emailService:        NewEmailService(configs.LoadConfig()),
 	}
 }
 
@@ -220,54 +220,60 @@ func (s *PaymentService) VerifyPayment(reference string) error {
 
 	// Update booking payment status\
 	updateQuery := `
-		UPDATE  bookings
-		SET     payment_Status   = $1,
-				paid_at			 = $2,
-				status			 = CASE
-					WHEN status = "pending" THEN "confirmed"
-					ELSE status
-				END
-		WHERE id =  $3
-	`
+    UPDATE bookings
+    SET
+        payment_status = $1,
+        paid_at        = $2,
+        status         = CASE
+            WHEN status = 'pending' THEN 'confirmed'
+            ELSE status
+        END
+    WHERE id             = $3
+      AND payment_status != 'paid'
+`
+	//  AND payment_status != 'paid' is the idempotency guard
+	// If the webhook fires twice, the second run hits 0 rows and exits cleanly
 
 	result, err := database.DB.Exec(updateQuery,
 		models.PaymentStatusPaid,
 		paidAt,
 		booking.ID,
 	)
-
 	if err != nil {
-		return fmt.Errorf("Failed to update booking payment status: %w", err)
+		return fmt.Errorf("failed to update booking payment status: %w", err)
 	}
 
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
-		return errors.New("Booking not found")
+		// Either booking not found OR already paid — both are safe to ignore
+		// Log it but don't return an error (so Paystack doesn't retry again)
+		fmt.Printf("VerifyPayment: booking %s already paid or not found — skipping\n", booking.ID)
+		return nil
 	}
 
-	go func ()  {
+	go func() {
 		_ = s.notificationService.CreateNotification(&models.CreateNotificationRequest{
-			UserID: booking.UserID.String(),
-			Title: "Payment Successfull",
+			UserID:  booking.UserID.String(),
+			Title:   "Payment Successfull",
 			Message: fmt.Sprintf("Payment for booking %s confirmed. Your ride is booked", booking.BookingReference),
-			Type: models.NotificationTypePaymentSuccess,
+			Type:    models.NotificationTypePaymentSuccess,
 			Data: map[string]interface{}{
-				"booking_id": 	booking.ID,
+				"booking_id":        booking.ID,
 				"booking_reference": booking.BookingReference,
-				"total_amount": booking.TotalAmount,
-				"pickup_date": booking.PickUpDate,
-				"return_date": booking.ReturnDate, 
+				"total_amount":      booking.TotalAmount,
+				"pickup_date":       booking.PickUpDate,
+				"return_date":       booking.ReturnDate,
 			},
 		})
 
 		// sending confirmation email
 		_ = s.emailService.SendBookingConfirmationEmail(
-			booking.UserID.String(), 
+			booking.UserID.String(),
 			booking.BookingReference,
 			booking.PickUpDate,
 			booking.ReturnDate,
 			booking.TotalAmount,
-		) 
+		)
 	}()
 	return nil
 
