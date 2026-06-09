@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/delaquash/carezo/configs"
 	"github.com/delaquash/carezo/internal/database"
 	models "github.com/delaquash/carezo/internal/model"
 )
@@ -19,6 +20,8 @@ type PaymentService struct {
 	paystackSecretKey string
 	paystackBaseURL   string
 	bookingService    *BookingService
+	notificationService *NotificationService
+	emailService  *EmailService
 }
 
 func NewPaymentService(paystackSecretKey string) *PaymentService {
@@ -26,6 +29,8 @@ func NewPaymentService(paystackSecretKey string) *PaymentService {
 		paystackSecretKey: paystackSecretKey,
 		paystackBaseURL:   "https://api.paystack.co",
 		bookingService:    NewBookingService(),
+		notificationService: NewNotification(),
+		emailService: NewEmailService(configs.LoadConfig()),
 	}
 }
 
@@ -239,6 +244,31 @@ func (s *PaymentService) VerifyPayment(reference string) error {
 	if rows == 0 {
 		return errors.New("Booking not found")
 	}
+
+	go func ()  {
+		_ = s.notificationService.CreateNotification(&models.CreateNotificationRequest{
+			UserID: booking.UserID.String(),
+			Title: "Payment Successfull",
+			Message: fmt.Sprintf("Payment for booking %s confirmed. Your ride is booked", booking.BookingReference),
+			Type: models.NotificationTypePaymentSuccess,
+			Data: map[string]interface{}{
+				"booking_id": 	booking.ID,
+				"booking_reference": booking.BookingReference,
+				"total_amount": booking.TotalAmount,
+				"pickup_date": booking.PickUpDate,
+				"return_date": booking.ReturnDate, 
+			},
+		})
+
+		// sending confirmation email
+		_ = s.emailService.SendBookingConfirmationEmail(
+			booking.UserID.String(), 
+			booking.BookingReference,
+			booking.PickUpDate,
+			booking.ReturnDate,
+			booking.TotalAmount,
+		) 
+	}()
 	return nil
 
 }

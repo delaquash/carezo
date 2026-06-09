@@ -3,6 +3,7 @@ package services
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/delaquash/carezo/internal/database"
 	models "github.com/delaquash/carezo/internal/model"
@@ -18,7 +19,7 @@ func NewNotification() *NotificationService {
 // saves a notification to the Db, this is called
 // internally after booking creation and payment notification
 
-func (s *NotificationService) CreateNotification(req models.CreateNotificationRequest) error {
+func (s *NotificationService) CreateNotification(req *models.CreateNotificationRequest) error {
 	dataJSON, err := json.Marshal(req.Data)
 
 	if err != nil {
@@ -107,4 +108,49 @@ func (s *NotificationService) MarkOneread(notificationID, userID string) error {
 	}
 
 	return nil
+}
+
+func (s *EmailService) SendBookingConfirmationEmail(
+	to, bookingReference string,
+	pickupDate, returnDate time.Time,
+	totalAmount float64,
+) error {
+	subject := "Booking Confirmed — " + bookingReference
+ 
+	body := fmt.Sprintf(`
+		<html>
+		<body style="font-family: sans-serif; color: #111;">
+			<h2 style="color: #16A34A;">Booking Confirmed ✅</h2>
+			<p>Your booking has been confirmed. Here are your details:</p>
+ 
+			<table style="border-collapse: collapse; width: 100%%;">
+				<tr>
+					<td style="padding: 8px; font-weight: bold;">Booking Reference</td>
+					<td style="padding: 8px;">%s</td>
+				</tr>
+				<tr style="background: #f9f9f9;">
+					<td style="padding: 8px; font-weight: bold;">Pickup Date</td>
+					<td style="padding: 8px;">%s</td>
+				</tr>
+				<tr>
+					<td style="padding: 8px; font-weight: bold;">Return Date</td>
+					<td style="padding: 8px;">%s</td>
+				</tr>
+				<tr style="background: #f9f9f9;">
+					<td style="padding: 8px; font-weight: bold;">Total Paid</td>
+					<td style="padding: 8px;">₦%.2f</td>
+				</tr>
+			</table>
+ 
+			<p style="margin-top: 24px;">Thank you for choosing Carezo. Have a safe trip!</p>
+		</body>
+		</html>
+	`,
+		bookingReference,
+		pickupDate.Format("Mon, 02 Jan 2006 15:04"),
+		returnDate.Format("Mon, 02 Jan 2006 15:04"),
+		totalAmount,
+	)
+ 
+	return s.sendEmail(to, subject, body)
 }

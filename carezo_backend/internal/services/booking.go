@@ -10,15 +10,22 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/delaquash/carezo/configs"
 	"github.com/delaquash/carezo/internal/database"
 	models "github.com/delaquash/carezo/internal/model"
 	"github.com/google/uuid"
 )
 
-type BookingService struct{}
+type BookingService struct{
+	notificationService *NotificationService
+	emailService		*EmailService
+}
 
 func NewBookingService() *BookingService {
-	return &BookingService{}
+	return &BookingService{
+		notificationService: NewNotification(),
+		emailService: NewEmailService(configs.LoadConfig()),
+	}
 }
 
 const refCharset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -254,6 +261,22 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
+
+	go func() {
+		_ = s.notificationService.CreateNotification(&models.CreateNotificationRequest{
+			UserID: userID,
+			Title: "Booking Created",
+			Message: fmt.Sprintf("Your bookinh  %s has been created. Complete payment to confrim.", booking.BookingReference),
+			Type: models.NotificationTypeBookingCreated,
+			Data: map[string]interface{}{
+				"booking_id":	booking.ID,
+				"booking_references": booking.BookingReference,
+				"total_amount": booking.TotalAmount,
+				"pickup_date": booking.PickUpDate,
+				"return_date": booking.ReturnDate,
+			},
+		})
+	}()
 
 	return &booking, nil
 }
