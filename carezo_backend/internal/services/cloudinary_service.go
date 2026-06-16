@@ -84,7 +84,7 @@ func (s *CloudinaryService) UploadImage(file multipart.File, folder string) (*Up
 // Each image gets its own URL. The app can display image 1 immediately
 // while images 2-5 are still loading — better UX for carousels.
 
-func (s *CloudinaryService) UploadMultipleImages(files []*multipart.File, folder string) ([]UploadResult, error) {
+func (s *CloudinaryService) UploadMultipleImages(files []*multipart.FileHeader, folder string) ([]UploadResult, error) {
 	// results is pre-allocated with the expected number of uploads for better performance.
 	results := make([]UploadResult, 0, len(files))
 
@@ -93,7 +93,7 @@ func (s *CloudinaryService) UploadMultipleImages(files []*multipart.File, folder
 		// open gives us tha actual bytes, fileHeader is just metadata about the file (name, size, etc.)
 		file, err := fileHeader.Open()
 		if err != nil {
-			return nil, fmt.Errorf("failed to open file %d: %v", i, err)
+			return nil, fmt.Errorf("failed to open file %d: %w", i+1, err)
 		}
 
 		// UploadMultipleImages uploads several files and returns one result per file.
@@ -103,7 +103,7 @@ func (s *CloudinaryService) UploadMultipleImages(files []*multipart.File, folder
 // Each image gets its own URL. The app can display image 1 immediately
 // while images 2-5 are still loading — better UX for carousels.
 		file.Close() // Ensure the file is closed after processing
-	}
+	
 
 	result, err := s.UploadImage(file, folder)
 
@@ -144,7 +144,7 @@ func (s *CloudinaryService) DeleteImage(publicID string) error {
 // Runs deletions sequentially — good enough for small counts (≤5).
 // For larger counts, you'd parallelise with goroutines.
 
-func(s *CloudinaryService) DeleteMultipleImages(publicIDs []string) error {
+func(s *CloudinaryService) DeleteMultipleImages(publicIDs []string) {
 	// Runs in background — caller does not wait for Cloudinary confirmation.
 	// WHY goroutine: deletion is non-critical. If Cloudinary is slow,
 	// the user should not see a delayed response.
