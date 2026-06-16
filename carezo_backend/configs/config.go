@@ -18,10 +18,10 @@ type Config struct {
 	DBName     string
 
 	// admin seeder
-	AdminEmail 		string
-	AdminPassword	string
-	AdminFirstName	string
-	AdminLastName	string
+	AdminEmail     string
+	AdminPassword  string
+	AdminFirstName string
+	AdminLastName  string
 
 	// Redis settings
 	RedisHost     string
@@ -56,14 +56,18 @@ type Config struct {
 	GoogleRedirectURL  string
 
 	// Paystack settings
-	PaystackSecretKey string
-	PaystackPublicKey string
+	PaystackSecretKey     string
+	PaystackPublicKey     string
 	PaystackWebhookSecret string
-
 
 	// Rate limiting settings
 	RateLimitRequests      int
 	RateLimitWindowSeconds int
+
+	// Cloudinary settings
+	CloudinaryCloudName string
+	CloudinaryAPIKey    string
+	CloudinaryAPISecret string
 
 	// File upload settings
 	MaxUploadSizeMB   int
@@ -133,8 +137,8 @@ func LoadConfig() *Config {
 		GoogleRedirectURL:  getEnv("GOOGLE_REDIRECT_URL", ""),
 
 		// Paystack
-		PaystackSecretKey: getEnv("PAYSTACK_SECRET_KEY", ""),
-		PaystackPublicKey: getEnv("PAYSTACK_PUBLIC_KEY", ""),
+		PaystackSecretKey:     getEnv("PAYSTACK_SECRET_KEY", ""),
+		PaystackPublicKey:     getEnv("PAYSTACK_PUBLIC_KEY", ""),
 		PaystackWebhookSecret: getEnv("PAYSTACK_WEBHOOK_SECRET", ""),
 
 		// Rate Limiting
@@ -146,6 +150,11 @@ func LoadConfig() *Config {
 		UploadPath:        getEnv("UPLOAD_PATH", "./uploads"),
 		AllowedImageTypes: getEnv("ALLOWED_IMAGE_TYPES", "jpg,jpeg,png,webp"),
 
+		// Cloudinary
+		CloudinaryCloudName: getEnv("CLOUDINARY_CLOUD_NAME", ""),
+		CloudinaryAPIKey:    getEnv("CLOUDINARY_API_KEY", ""),
+		CloudinaryAPISecret: getEnv("CLOUDINARY_API_SECRET", ""),
+
 		// Admin seeder
 		// Admin seeder
 		AdminEmail:     getEnv("ADMIN_EMAIL", "admin@carezo.com"),
@@ -154,5 +163,3 @@ func LoadConfig() *Config {
 		AdminLastName:  getEnv("ADMIN_LAST_NAME", "Admin"),
 	}
 }
-
-
