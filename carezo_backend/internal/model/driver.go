@@ -24,9 +24,11 @@ type Driver struct {
 	LicenseExpiryDate time.Time `json:"license_expiry_date" db:"license_expiry_date"`
 	YearsOfExperience int       `json:"years_of_experience" db:"years_of_experience"`
 
-	ProfileImageURL *string `json:"profile_image_url,omitempty" db:"profile_image_url"`
-	Bio             *string `json:"bio,omitempty" db:"bio"`
-	Languages       JSONB   `json:"languages" db:"languages"`
+	ProfileImageURL      *string `json:"profile_image_url,omitempty" db:"profile_image_url"`
+	ProfileImagePublicID *string `json:"profile_image_public_id,omitempty" db:"profile_image_public_id"`
+
+	Bio       *string `json:"bio,omitempty" db:"bio"`
+	Languages JSONB   `json:"languages" db:"languages"`
 
 	AverageRating float64 `json:"average_rating" db:"average_rating"`
 	TotalReviews  int     `json:"total_reviews" db:"total_reviews"`
@@ -42,42 +44,47 @@ type Driver struct {
 
 // CreateDriverRequest - for admin
 type CreateDriverRequest struct {
-	FirstName         string   `json:"first_name" binding:"required"`
-	LastName          string   `json:"last_name" binding:"required"`
-	Age               int      `json:"age" binding:"required,min=21,max=70"`
-	Gender            string   `json:"gender" binding:"required,oneof=male female"`
-	State             string   `json:"state" binding:"required"`
-	Religion          *string  `json:"religion,omitempty"`
-	Complexion        string   `json:"complexion" binding:"required"`
-	Height            int      `json:"height" binding:"required,min=140,max=220"` // cm
-	PhoneNumber       string   `json:"phone_number" binding:"required"`
-	Email             *string  `json:"email,omitempty"`
-	LicenseNumber     string   `json:"license_number" binding:"required"`
-	LicenseExpiryDate string   `json:"license_expiry_date" binding:"required"` // ISO 8601 format
-	YearsOfExperience int      `json:"years_of_experience" binding:"required,min=0"`
-	Bio               *string  `json:"bio,omitempty"`
-	Languages         []string `json:"languages,omitempty"`
+	FirstName            string   `json:"first_name" binding:"required"`
+	LastName             string   `json:"last_name" binding:"required"`
+	Age                  int      `json:"age" binding:"required,min=21,max=70"`
+	Gender               string   `json:"gender" binding:"required,oneof=male female"`
+	State                string   `json:"state" binding:"required"`
+	Religion             *string  `json:"religion,omitempty"`
+	Complexion           string   `json:"complexion" binding:"required"`
+	Height               int      `json:"height" binding:"required,min=140,max=220"` // cm
+	PhoneNumber          string   `json:"phone_number" binding:"required"`
+	Email                *string  `json:"email,omitempty"`
+	LicenseNumber        string   `json:"license_number" binding:"required"`
+	LicenseExpiryDate    string   `json:"license_expiry_date" binding:"required"` // ISO 8601 format
+	YearsOfExperience    int      `json:"years_of_experience" binding:"required,min=0"`
+	Bio                  *string  `json:"bio,omitempty"`
+	Languages            []string `json:"languages,omitempty"`
+	ProfileImageURL      *string  `json:"profile_image_url,omitempty"`
+	ProfileImagePublicID *string  `json:"profile_image_public_id,omitempty"`
 }
 
 // UpdateDriverRequest - admin updates driver details
 type UpdateDriverRequest struct {
-	FirstName         *string  `json:"first_name,omitempty"`
-	LastName          *string  `json:"last_name,omitempty"`
-	Age               *int     `json:"age,omitempty"`
-	Gender            *string  `json:"gender,omitempty"`
-	State             *string  `json:"state,omitempty"`
-	Religion          *string  `json:"religion,omitempty"`
-	Complexion        *string  `json:"complexion,omitempty"`
-	Height            *int     `json:"height,omitempty"`
-	PhoneNumber       *string  `json:"phone_number,omitempty"`
-	Email             *string  `json:"email,omitempty"`
-	LicenseNumber     *string  `json:"license_number,omitempty"`
-	LicenseExpiryDate *string  `json:"license_expiry_date,omitempty"`
-	YearsOfExperience *int     `json:"years_of_experience,omitempty"`
-	Bio               *string  `json:"bio,omitempty"`
-	Languages         []string `json:"languages,omitempty"`
-	IsAvailable       *bool    `json:"is_available,omitempty"`
-	Status            *string  `json:"status,omitempty"`
+	FirstName               *string  `json:"first_name,omitempty"`
+	LastName                *string  `json:"last_name,omitempty"`
+	Age                     *int     `json:"age,omitempty"`
+	Gender                  *string  `json:"gender,omitempty"`
+	State                   *string  `json:"state,omitempty"`
+	Religion                *string  `json:"religion,omitempty"`
+	Complexion              *string  `json:"complexion,omitempty"`
+	Height                  *int     `json:"height,omitempty"`
+	PhoneNumber             *string  `json:"phone_number,omitempty"`
+	Email                   *string  `json:"email,omitempty"`
+	LicenseNumber           *string  `json:"license_number,omitempty"`
+	LicenseExpiryDate       *string  `json:"license_expiry_date,omitempty"`
+	YearsOfExperience       *int     `json:"years_of_experience,omitempty"`
+	Bio                     *string  `json:"bio,omitempty"`
+	Languages               []string `json:"languages,omitempty"`
+	IsAvailable             *bool    `json:"is_available,omitempty"`
+	Status                  *string  `json:"status,omitempty"`
+	ProfileImageURL         *string  `json:"profile_image_url,omitempty"`
+	ProfileImagePublicID    *string  `json:"profile_image_public_id,omitempty"`
+	OldProfileImagePublicID *string  `json:"old_profile_image_public_id,omitempty"`
 }
 
 // SearchDriversRequest - Search and filter drivers
