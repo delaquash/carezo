@@ -13,6 +13,7 @@ import (
 	"github.com/delaquash/carezo/internal/database"
 	"github.com/delaquash/carezo/internal/handlers"
 	"github.com/delaquash/carezo/internal/middleware"
+	"github.com/delaquash/carezo/internal/services"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,6 +42,14 @@ func main() {
 		log.Fatalf("Failed to connect to redis: %v", err)
 	}
 	defer database.CloseRedis()
+
+	// cloudinary
+	cloudinaryService, err := services.NewCloudinaryService(cfg)
+	if err != nil {
+		log.Fatalf("Failed to initiative Cloudinary: %v", err)
+	}
+
+	log.Println("Cloudinary initialised successfully")
 
 	// Set gin mode
 	if cfg.AppEnv == "production" {
@@ -73,6 +82,8 @@ func main() {
 	bookingHandler := handlers.NewBookingHandler()
 	paymentHandler := handlers.NewPaymentHandler(cfg)
 	notificationHandler := handlers.NewNotificationHandler()
+	reviewHandler := handlers.NewReviewHandler(cloudinaryService)
+	uploaderHandler := handlers.NewUploadHandler(cloudinaryService)
 
 	// routes
 	api := router.Group("/api")
@@ -110,6 +121,14 @@ func main() {
 		{
 			// payment.POST("/webhook", paymentHandler.HandleWebhook)
 			payment.POST("/initialize", middleware.AuthMiddleware(cfg), paymentHandler.InitializePayment)
+		}
+
+		// UPload
+		upload := api.Group("/upload")
+		upload.Use(middleware.AuthMiddleware(cfg))
+		{
+			upload.POST("", uploaderHandler.UploadSingleImage)
+			upload.POST("/multiple", uploaderHandler.UploadMultipleImages)
 		}
 
 		//  PROTECTED
@@ -153,6 +172,9 @@ func main() {
 
 			protected.POST("/reviews", driverHandler.CreateReview)
 		}
+
+		// Reviews
+		
 
 		// Admin routes
 		admin := protected.Group("/admin")
