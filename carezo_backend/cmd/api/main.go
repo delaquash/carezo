@@ -174,7 +174,12 @@ func main() {
 		}
 
 		// Reviews
-		
+		reviews := protected.Group("/reviews")
+		{
+			reviews.POST("", driverHandler.CreateReview)
+			reviews.GET("/:id", reviewHandler.GetReview)
+			reviews.PUT("/:id/images", reviewHandler.EditReviewImage)
+		}
 
 		// Admin routes
 		admin := protected.Group("/admin")
