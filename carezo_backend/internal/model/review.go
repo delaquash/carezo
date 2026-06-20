@@ -37,3 +37,7 @@ type CreateReviewRequest struct {
 	Images                 JSONB   `json:"images" db:"images"`
 	ImagePublicIDs []string `json:"image_public_ids,omitempty"`
 }
+
+type GetReview struct {
+	
+}

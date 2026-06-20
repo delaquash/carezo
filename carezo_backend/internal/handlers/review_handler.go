@@ -10,7 +10,7 @@ import (
 )
 
 type ReviewHandler struct {
-	reviewService     *services.ReviewService
+	reviewService     *services.ReviewService,
 	cloudinaryService *services.CloudinaryService
 }
 
@@ -53,7 +53,7 @@ func (h *ReviewHandler) EditReviewImage(c *gin.Context) {
 	userRole, _ := c.Get("user_role")
 	isAdmin := userRole == "admin"
 
-	var req EditReviewImageRequest
+	var req EditReviewImagesRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "invalid request: "+err.Error())
@@ -64,7 +64,7 @@ func (h *ReviewHandler) EditReviewImage(c *gin.Context) {
 	// WHY: an empty request (no new images, no removals) is a no-op and
 	// likely indicates a client bug — better to reject it clearly.
 
-	if len(req.NewImage) == 0 && len(req.RemoveImagePublicIDs) == 0 {
+	if len(req.NewImages) == 0 && len(req.RemoveImagePublicIDs) == 0 {
 		response.Error(c, http.StatusBadRequest, "provide new images to add or remove_image_publics_ids to remove")
 		return
 	}
@@ -91,7 +91,7 @@ func (h *ReviewHandler) EditReviewImage(c *gin.Context) {
 		userID.(string),
 		isAdmin,
 		req.NewImages,
-		req.NewImagesPublicIDs,
+		req.NewImagePublicIDs,
 		req.RemoveImagePublicIDs,
 	)
 
@@ -120,12 +120,26 @@ func (h *ReviewHandler) EditReviewImage(c *gin.Context) {
 // Simple read endpoint — no Cloudinary interaction, included here for completeness
 // since it lives alongside EditReviewImages in the same handler.
 
-func (h *ReviewHandler) GetReview(c *gin.Context) {
-	review, err := h.reviewService.GetReviewByID(c.Param("id"))
+func (h *ReviewHandler) GetReviewByID(c *gin.Context) {
+	// get review id from URL
+	reviewID := c.Param("id")
+
+	if reviewID == "" {
+		response.Error(c, http.StatusBadRequest, "review ID is required")
+		return
+	}
+
+	review, err := h.reviewService.GetReviewByID(reviewID)
 
 	if err != nil {
 		response.Error(c, http.StatusNotFound, err.Error())
 		return
-	}
-	response.Success(c, http.StatusOK, "review retrieved successfully", review)
+	}query
+
+	response.Success(
+		c,
+		http.StatusOK,
+		"review retrieved successfully",
+		review,
+	)
 }
