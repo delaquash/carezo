@@ -125,7 +125,7 @@ func (r *ReviewService)  CreateReview(userID string, req *models.CreateReviewReq
 // EditReviewImages — add new photos and/or remove specific existing ones in one call
 // returns the updated review AND the list of public_ids that were removed,
 // so the HANDLER (not this service) can delete them from Cloudinary
-func (r *ReviewService) EditReviewImages (reviewID string, requesterID string, isAdmin bool, newImages []string,newImagePublicIDs []string) (*models.Review, []string, error) {
+func (r *ReviewService) EditReviewImages (reviewID string, requesterID string, isAdmin bool, newImages []string,newImagePublicIDs []string,  removePublicIDs []string,) (*models.Review, []string, error) {
 	// same parallel-array guard as everywhere else in this codebase
 	if len(newImages) != len(newImagePublicIDs) {
 		return nil, nil, errors.New("new images and new_image_public_ids must have the same number of items")

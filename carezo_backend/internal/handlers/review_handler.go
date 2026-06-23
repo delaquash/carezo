@@ -10,7 +10,7 @@ import (
 )
 
 type ReviewHandler struct {
-	reviewService     *services.ReviewService,
+	reviewService     *services.ReviewService
 	cloudinaryService *services.CloudinaryService
 }
 
@@ -134,7 +134,7 @@ func (h *ReviewHandler) GetReviewByID(c *gin.Context) {
 	if err != nil {
 		response.Error(c, http.StatusNotFound, err.Error())
 		return
-	}query
+	}
 
 	response.Success(
 		c,
