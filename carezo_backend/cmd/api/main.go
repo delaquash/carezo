@@ -170,7 +170,7 @@ func main() {
 				bookings.POST("/:id/cancel", bookingHandler.CancelBooking)
 			}
 
-			protected.POST("/reviews", driverHandler.CreateReview)
+			// protected.POST("/reviews", driverHandler.CreateReview)
 		}
 
 		// Reviews
