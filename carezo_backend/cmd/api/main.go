@@ -76,9 +76,9 @@ func main() {
 
 	// handlers
 	authHandler := handlers.NewAuthHandler(cfg)
-	carHandler := handlers.NewCarHandler()
-	driverHandler := handlers.NewDriverHandler()
-	userHandler := handlers.NewUserHandler()
+	carHandler := handlers.NewCarHandler(cloudinaryService)
+	driverHandler := handlers.NewDriverHandler(cloudinaryService)
+	userHandler := handlers.NewUserHandler(cloudinaryService)
 	bookingHandler := handlers.NewBookingHandler()
 	paymentHandler := handlers.NewPaymentHandler(cfg)
 	notificationHandler := handlers.NewNotificationHandler()
@@ -154,12 +154,12 @@ func main() {
 			}
 			notifications := protected.Group("/notifications")
 			{
-				notifications.GET("", notificationHandler.GetNotifications)            
-				notifications.GET("/unread-count", notificationHandler.GetUnreadCount) 
-				notifications.PUT("/read-all", notificationHandler.MarkAllRead)        
+				notifications.GET("", notificationHandler.GetNotifications)
+				notifications.GET("/unread-count", notificationHandler.GetUnreadCount)
+				notifications.PUT("/read-all", notificationHandler.MarkAllRead)
 				notifications.PUT("/:id/read", notificationHandler.MarkOneRead)
-				notifications.DELETE("/:id", notificationHandler.DeleteNotification) 
-				notifications.DELETE("", notificationHandler.DeleteAllNotification)  
+				notifications.DELETE("/:id", notificationHandler.DeleteNotification)
+				notifications.DELETE("", notificationHandler.DeleteAllNotification)
 			}
 
 			bookings := protected.Group("/bookings")
@@ -177,7 +177,7 @@ func main() {
 		reviews := protected.Group("/reviews")
 		{
 			reviews.POST("", driverHandler.CreateReview)
-			reviews.GET("/:id", reviewHandler.GetReview)
+			reviews.GET("/:id", reviewHandler.GetReviewByID)
 			reviews.PUT("/:id/images", reviewHandler.EditReviewImage)
 		}
 
@@ -205,7 +205,7 @@ func main() {
 			users := admin.Group("/users")
 			{
 				users.GET("", userHandler.ListAllUsers)
-				users.GET("/:id", userHandler.GetUserByID) 
+				users.GET("/:id", userHandler.GetUserByID)
 				users.PUT("/:id/status", userHandler.UpdateUserStatus)
 			}
 		}
