@@ -12,10 +12,11 @@ type Driver struct {
 	Age       int    `json:"age" db:"age"`
 	Gender    string `json:"gender" db:"gender"`
 
-	State      string `json:"state" db:"state"`
-	Religion   string `json:"religion,omitempty" db:"religion"`     // ✅ no space
-	Complexion string `json:"complexion,omitempty" db:"complexion"` // ✅ no space
-	Height     int    `json:"height" db:"height"`                   // ✅ int not string
+	State       string `json:"state" db:"state"`
+	Nationality string `db:"nationality" json:"nationality"`
+	Religion    string `json:"religion,omitempty" db:"religion"`
+	Complexion  string `json:"complexion,omitempty" db:"complexion"`
+	Height      int    `json:"height" db:"height"`
 
 	PhoneNumber string  `json:"phone_number" db:"phone_number"`
 	Email       *string `json:"email" db:"email"`
@@ -49,6 +50,7 @@ type CreateDriverRequest struct {
 	Age                  int      `json:"age" binding:"required,min=21,max=70"`
 	Gender               string   `json:"gender" binding:"required,oneof=male female"`
 	State                string   `json:"state" binding:"required"`
+	Nationality          string   `db:"nationality" json:"nationality"`
 	Religion             *string  `json:"religion,omitempty"`
 	Complexion           string   `json:"complexion" binding:"required"`
 	Height               int      `json:"height" binding:"required,min=140,max=220"` // cm

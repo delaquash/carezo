@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS drivers (
     -- drivers personal info
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
+    state VARCHAR(50) NOT NULL,
     age INTEGER NOT NULL CHECK (age >= 21 AND age <= 50),
     gender VARCHAR(10) CHECK (gender IN ('male', 'female')),
     nationality VARCHAR(100),

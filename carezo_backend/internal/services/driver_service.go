@@ -21,6 +21,7 @@ func NewDriverService() *DriverService {
 
 // Admin to create driver
 func (s *DriverService) CreateDriver(req *models.CreateDriverRequest) (*models.Driver, error) {
+	// licenseNumber := strings.TrimSpace(req.LicenseNumber)
 	// check if vehicle exist using license number and has not been soft-deleted (deleted_at IS NULL)
 	var exists bool
 	query := `SELECT EXISTS(SELECT 1 FROM drivers WHERE license_number = $1 AND deleted_at is NULL)`
@@ -390,7 +391,7 @@ func (s *DriverService) GetDriverReviews(driverID string) ([]*models.Review, err
 	var reviews []*models.Review
 	query := `
 		SELECT * FROM reviews
-		WHERE driver_id = $1 AND status = "published"
+		WHERE driver_id = $1 AND status = 'published
 		ORDER BY created_at DESC
 	`
 
