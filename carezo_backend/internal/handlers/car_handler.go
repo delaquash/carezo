@@ -40,7 +40,7 @@ func (h *CarHandler) CreateCar(c *gin.Context) {
 
 	// images[] and image_public_ids[] MUST be the same length or we lose track
 	// of which public_id belongs to which URL — breaks future deletion
-	if len(req.Images) != len(req.ImagePublicIDs) {
+	if len(req.Images) > 0  && len(req.Images) != len(req.ImagePublicIDs) {
 		response.Error(c, http.StatusBadRequest, "images and image_public_ids must have the same number of items")
 		return
 	}
