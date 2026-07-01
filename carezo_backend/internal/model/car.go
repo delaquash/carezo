@@ -68,9 +68,9 @@ type CreateCarRequest struct {
 	CautionFee      float64    `json:"caution_fee" binding:"required,min=0"`
 	Features        []string   `json:"features,omitempty"`
 	CurrentLocation *string    `json:"current_location,omitempty"`
-	Images          []string   `json:"images" binding:"required,min=1"`
+	Images          []string   `json:"images,omitempty"`
 
-	ImagePublicIDs []string `json:"image_public_ids" binding:"required"`
+	ImagePublicIDs []string `json:"image_public_ids,omitempty"`
 	// HourlyRate      map[string]interface{} `json:"hourly_rate"`
 }
 
