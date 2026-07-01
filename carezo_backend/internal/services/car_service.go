@@ -415,11 +415,11 @@ func (s *CarService) GetAvailableCars(pickupDate, returnDate time.Time) ([]*mode
 	query := `
 		SELECT c.* FROM cars c
 	    WHERE c.is_available = true 
-		AND c.status = "active	
+		AND c.status = 'active'	
 		AND c.deleted_at IS NULL
 		AND c.id NOT IN (
 			SELECT car_id FROM bookings
-			WHERE status IN ("confirmed", "in_progress")
+			WHERE status IN ('confirmed', 'in_progress')
 			AND (
 				(pickup_date <= $1 AND return_date >= $1) OR
 				(pickup_date <= $2 AND return_date >= $2) OR
@@ -512,7 +512,7 @@ func (s *CarService) GetPopularCars(page, perPage int) ([]*models.Car, int, erro
 	err := database.DB.Get(&total, `
 		SELECT COUNT(*) FROM cars 
 			WHERE is_available = true
-			AND deleted_at = NULL
+			AND deleted_at IS NULL
 	`)
 	// if sql fails 
 	if err != nil {
@@ -533,7 +533,7 @@ func (s *CarService) GetPopularCars(page, perPage int) ([]*models.Car, int, erro
 		LEFT JOIN (
 			SELECT car_id, COUNT(*) AS booking_count
 			FROM bookings
-			WHERE status NOT IN("cancelled")
+			WHERE status NOT IN('cancelled')
 			GROUP BY car_id
 		) b ON b.car_id = c.id
 		 WHERE c.is_available = true
