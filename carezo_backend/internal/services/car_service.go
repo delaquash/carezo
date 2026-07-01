@@ -438,7 +438,7 @@ func (s *CarService) GetAvailableCars(pickupDate, returnDate time.Time) ([]*mode
 	return cars, nil
 }
 
-func (s *CarService) GetNearbyCar(city string, page int, perPage int) ([]*models.Car, int, error) {
+func (s *CarService) GetNearbyCars(city string, page int, perPage int) ([]*models.Car, int, error) {
 	if page < 1 {
 		page = 0
 	}

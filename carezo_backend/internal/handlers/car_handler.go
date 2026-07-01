@@ -296,7 +296,7 @@ func (h *CarHandler) GetNearByCars(c *gin.Context) {
 		fmt.Scanf(pp, "%d", &perPage)
 	}
 
-	cars, total, err := h.carService.GetNearbyCar(city, page, perPage)
+	cars, total, err := h.carService.GetNearbyCars(city, page, perPage)
 
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
