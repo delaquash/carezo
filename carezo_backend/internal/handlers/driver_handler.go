@@ -88,7 +88,7 @@ func (h *DriverHandler) UpdateDriver(c *gin.Context) {
 		go func(oldID string) {
 			// gorountine background doesnt block the response
 			if err := h.cloudinaryServices.DeleteImage(oldID); err != nil {
-				fmt.Sprintf("[Cloudinary] failed to delete old driver photos  %s: %v\n", oldID, err)
+				fmt.Printf("[Cloudinary] failed to delete old driver photos  %s: %v\n", oldID, err)
 			}
 		}(*req.OldProfileImagePublicID) // dereference the pointer to get the string value
 	}

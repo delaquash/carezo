@@ -5,42 +5,33 @@ import (
 )
 
 type Driver struct {
-	ID string `json:"id" db:"id"`
-
-	FirstName string `json:"first_name" db:"first_name"`
-	LastName  string `json:"last_name" db:"last_name"`
-	Age       int    `json:"age" db:"age"`
-	Gender    string `json:"gender" db:"gender"`
-
-	State       string `json:"state" db:"state"`
-	Nationality string `db:"nationality" json:"nationality"`
-	Religion    string `json:"religion,omitempty" db:"religion"`
-	Complexion  string `json:"complexion,omitempty" db:"complexion"`
-	Height      int    `json:"height" db:"height"`
-
-	PhoneNumber string  `json:"phone_number" db:"phone_number"`
-	Email       *string `json:"email" db:"email"`
-
-	LicenseNumber     string    `json:"license_number" db:"license_number"`
-	LicenseExpiryDate time.Time `json:"license_expiry_date" db:"license_expiry_date"`
-	YearsOfExperience int       `json:"years_of_experience" db:"years_of_experience"`
-
-	ProfileImageURL      *string `json:"profile_image_url,omitempty" db:"profile_image_url"`
-	ProfileImagePublicID *string `json:"profile_image_public_id,omitempty" db:"profile_image_public_id"`
-
-	Bio       *string `json:"bio,omitempty" db:"bio"`
-	Languages JSONB   `json:"languages" db:"languages"`
-
-	AverageRating float64 `json:"average_rating" db:"average_rating"`
-	TotalReviews  int     `json:"total_reviews" db:"total_reviews"`
-	TotalTrips    int     `json:"total_trips" db:"total_trips"`
-
-	IsAvailable bool   `json:"is_available" db:"is_available"`
-	Status      string `json:"status" db:"status"`
-
-	CreatedAt time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
-	DeletedAt *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
+	ID                   string     `db:"id"                    json:"id"`
+	FirstName            string     `db:"first_name"            json:"first_name"`
+	LastName             string     `db:"last_name"             json:"last_name"`
+	Age                  int        `db:"age"                   json:"age"`
+	Gender               string     `db:"gender"                json:"gender"`
+	State                string     `db:"state"                 json:"state"`
+	Religion             *string    `db:"religion"              json:"religion,omitempty"`
+	Complexion           *string    `db:"complexion"            json:"complexion,omitempty"`
+	Nationality          *string    `db:"nationality"           json:"nationality,omitempty"` // ← was string, NULL breaks scan
+	Height               int        `db:"height"                json:"height"`
+	PhoneNumber          string     `db:"phone_number"          json:"phone_number"`
+	TotalTrips           *int       `db:"total_trips" json:"total_trips,omitempty"`
+	Email                string     `db:"email"                 json:"email"`
+	LicenseNumber        string     `db:"license_number"        json:"license_number"`
+	LicenseExpiryDate    time.Time  `db:"license_expiry_date"   json:"license_expiry_date"`
+	YearsOfExperience    int        `db:"years_of_experience"   json:"years_of_experience"`
+	Bio                  *string    `db:"bio"                   json:"bio,omitempty"`
+	Languages            JSONB      `db:"languages"             json:"languages"`
+	IsAvailable          bool       `db:"is_available"          json:"is_available"`
+	Status               string     `db:"status"                json:"status"`
+	AverageRating        *float64   `db:"average_rating"        json:"average_rating,omitempty"`
+	TotalReviews         *int       `db:"total_reviews"         json:"total_reviews,omitempty"`
+	ProfileImageURL      *string    `db:"profile_image_url"     json:"profile_image_url,omitempty"`
+	ProfileImagePublicID *string    `db:"profile_image_public_id" json:"profile_image_public_id,omitempty"`
+	CreatedAt            time.Time  `db:"created_at"            json:"created_at"`
+	UpdatedAt            time.Time  `db:"updated_at"            json:"updated_at"`
+	DeletedAt            *time.Time `db:"deleted_at"            json:"deleted_at,omitempty"`
 }
 
 // CreateDriverRequest - for admin

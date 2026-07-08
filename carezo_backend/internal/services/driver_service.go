@@ -391,7 +391,7 @@ func (s *DriverService) GetDriverReviews(driverID string) ([]*models.Review, err
 	var reviews []*models.Review
 	query := `
 		SELECT * FROM reviews
-		WHERE driver_id = $1 AND status = 'published
+		WHERE driver_id = $1 AND status = 'published'
 		ORDER BY created_at DESC
 	`
 
