@@ -33,7 +33,7 @@ type Booking struct {
 	// Booking details
 	PickUpDate   time.Time `json:"pickup_date" db:"pickup_date"`
 	ReturnDate   time.Time `json:"return_date" db:"return_date"`
-	ActualReturnDate time.Time `json:"actual_return_date,omitempty" db:"actual_return_date"`
+	ActualReturnDate *time.Time `json:"actual_return_date,omitempty" db:"actual_return_date"`
 
 	Destination string `json:"destination" db:"destination"`
 
