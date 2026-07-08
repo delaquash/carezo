@@ -17,7 +17,7 @@ func AuthMiddleware(cfg *configs.Config) gin.HandlerFunc {
 		if authHeader == "" {
 			response.Error(c, http.StatusUnauthorized, "Authorization header required")
 			c.Abort()
-			return 
+			return
 		}
 
 		// Extract token (remove "Bearer ")
@@ -25,7 +25,7 @@ func AuthMiddleware(cfg *configs.Config) gin.HandlerFunc {
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			response.Error(c, http.StatusUnauthorized, "Invalid authorization header format")
 			c.Abort()
-			return 
+			return
 		}
 		token := parts[1]
 
@@ -34,7 +34,7 @@ func AuthMiddleware(cfg *configs.Config) gin.HandlerFunc {
 		if err != nil {
 			response.Error(c, http.StatusUnauthorized, "Invalid or expired token")
 			c.Abort()
-			return 
+			return
 		}
 
 		// Add user info to conxtext so handlers can access it
@@ -42,16 +42,14 @@ func AuthMiddleware(cfg *configs.Config) gin.HandlerFunc {
 		c.Set("user_email", claims.Email)
 		c.Set("user_role", claims.Role)
 
-
 		// continue to next handler
 		c.Next()
 	}
 }
 
-
 // function to check if user has required role(admin, user etc)
 func RequireRole(role string) gin.HandlerFunc {
-	return func (c *gin.Context) {
+	return func(c *gin.Context) {
 		userRole, exists := c.Get("user_role")
 		if !exists {
 			response.Error(c, http.StatusUnauthorized, "Unauthorized")
@@ -64,7 +62,8 @@ func RequireRole(role string) gin.HandlerFunc {
 			response.Error(
 				c,
 				http.StatusForbidden, "Permission denied")
-				return
+			c.Abort()
+			return
 		}
 		c.Next()
 	}
