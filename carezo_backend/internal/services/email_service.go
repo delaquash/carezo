@@ -1,7 +1,7 @@
 package services
 
 import (
-	"crypto/tls"
+	// "crypto/tls"
 	"fmt"
 	"strconv"
     "gopkg.in/gomail.v2"
@@ -56,6 +56,29 @@ func (s *EmailService) SendPasswordResetEmail(to, resetToken string) error {
 
 // sendEmail is the actual email sending function
 
+// func (s *EmailService) sendEmail(to, subject, body string) error {
+//     port, err := strconv.Atoi(s.cfg.SMTPPort)
+//     if err != nil {
+//         return fmt.Errorf("invalid SMTP port: %w", err)
+//     }
+
+//     m := gomail.NewMessage()
+//     m.SetHeader("From", fmt.Sprintf("%s <%s>", s.cfg.FromName, s.cfg.FromEmail))
+//     m.SetHeader("To", to)
+//     m.SetHeader("Subject", subject)
+//     m.SetBody("text/html", body)
+
+//     d := gomail.NewDialer(s.cfg.SMTPHost, port, s.cfg.SMTPUser, s.cfg.SMTPPassword)
+//     d.TLSConfig = &tls.Config{ServerName: s.cfg.SMTPHost}
+//     d.SSL = true // ✅ port 465 uses SSL directly
+
+//     if err := d.DialAndSend(m); err != nil {
+//         return fmt.Errorf("failed to send email: %w", err)
+//     }
+
+//     return nil
+// }
+
 func (s *EmailService) sendEmail(to, subject, body string) error {
     port, err := strconv.Atoi(s.cfg.SMTPPort)
     if err != nil {
@@ -69,12 +92,19 @@ func (s *EmailService) sendEmail(to, subject, body string) error {
     m.SetBody("text/html", body)
 
     d := gomail.NewDialer(s.cfg.SMTPHost, port, s.cfg.SMTPUser, s.cfg.SMTPPassword)
-    d.TLSConfig = &tls.Config{ServerName: s.cfg.SMTPHost}
-    d.SSL = true // ✅ port 465 uses SSL directly
+
+    // ← This is the key change
+    // Port 465 = SSL=true
+    // Port 587 = SSL=false + STARTTLS
+    // Port 2525 = SSL=false (Mailtrap)
+    if port == 465 {
+        d.SSL = true
+    } else {
+        d.SSL = false   // 587 and 2525 use STARTTLS, not direct SSL
+    }
 
     if err := d.DialAndSend(m); err != nil {
         return fmt.Errorf("failed to send email: %w", err)
     }
-
     return nil
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"math/big"
 	"time"
@@ -16,15 +17,15 @@ import (
 	"github.com/google/uuid"
 )
 
-type BookingService struct{
+type BookingService struct {
 	notificationService *NotificationService
-	emailService		*EmailService
+	emailService        *EmailService
 }
 
 func NewBookingService() *BookingService {
 	return &BookingService{
 		notificationService: NewNotification(),
-		emailService: NewEmailService(configs.LoadConfig()),
+		emailService:        NewEmailService(configs.LoadConfig()),
 	}
 }
 
@@ -75,7 +76,7 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	// fetch car after confirming car exist and pricing
 	var car models.Car
 
-	err =tx.Get(&car, `SELECT * FROM cars WHERE id = $1 AND deleted_at IS NULL`, req.CarID)
+	err = tx.Get(&car, `SELECT * FROM cars WHERE id = $1 AND deleted_at IS NULL`, req.CarID)
 
 	// err := database.DB.Get(&car, query, req.CarID)
 
@@ -93,7 +94,7 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	// fetch driver
 
 	var driver models.Driver
-	err =tx.Get(&driver, `SELECT * FROM drivers WHERE id = $1 AND deleted_at IS NULL`, req.DriverID)
+	err = tx.Get(&driver, `SELECT * FROM drivers WHERE id = $1 AND deleted_at IS NULL`, req.DriverID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -109,7 +110,7 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	// check for car overlapping
 	var carBookingCount int
 
-	err =tx.Get(&carBookingCount, `
+	err = tx.Get(&carBookingCount, `
 		SELECT COUNT(*) FROM bookings
 		WHERE car_id        = $1
 		  AND cancelled_at IS NULL
@@ -127,7 +128,7 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 
 	// check driver availability
 	var driverBookingCount int
-	err =tx.Get(&driverBookingCount, `
+	err = tx.Get(&driverBookingCount, `
 		SELECT COUNT(*) FROM bookings
 		WHERE driver_id        = $1
 		  AND cancelled_at IS NULL
@@ -176,8 +177,7 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	totalHours := math.Ceil(duration.Hours())
 	tripCost := rateToUse * totalHours
 	totalAmount := tripCost + car.CautionFee
-	refundableAmount := car.CautionFee 
-
+	refundableAmount := car.CautionFee
 
 	// generate booking reference
 	ref, err := generateBookingReference()
@@ -187,8 +187,10 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	// create and insert booking
 	bookingID := uuid.New().String()
 	var booking models.Booking
+	log.Println("JWT userID:", userID)
+	log.Printf("Type: %T\n", userID)
 
-	err =tx.Get(&booking, `
+	err = tx.Get(&booking, `
         INSERT INTO bookings (
             id,
             booking_reference,
@@ -199,7 +201,6 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
             return_date,
             destination,
             pickup_location,
-            hourly_rate,
             caution_fee,
             total_amount,
             refundable_amount,
@@ -264,16 +265,16 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 
 	go func() {
 		_ = s.notificationService.CreateNotification(&models.CreateNotificationRequest{
-			UserID: userID,
-			Title: "Booking Created",
+			UserID:  userID,
+			Title:   "Booking Created",
 			Message: fmt.Sprintf("Your bookinh  %s has been created. Complete payment to confrim.", booking.BookingReference),
-			Type: models.NotificationTypeBookingCreated,
+			Type:    models.NotificationTypeBookingCreated,
 			Data: map[string]interface{}{
-				"booking_id":	booking.ID,
+				"booking_id":         booking.ID,
 				"booking_references": booking.BookingReference,
-				"total_amount": booking.TotalAmount,
-				"pickup_date": booking.PickUpDate,
-				"return_date": booking.ReturnDate,
+				"total_amount":       booking.TotalAmount,
+				"pickup_date":        booking.PickUpDate,
+				"return_date":        booking.ReturnDate,
 			},
 		})
 	}()
@@ -326,22 +327,21 @@ func (s *BookingService) GetUserBookings(userID string, status string, page, lim
 	for i := 1; i < len(conditions); i++ {
 		whereClause += " AND " + conditions[i]
 	}
-	//  count total (for pagination meta) 
-	
+	//  count total (for pagination meta)
+
 	var total int
 	if err := database.DB.Get(&total, "SELECT COUNT(*) FROM bookings WHERE "+whereClause, args...); err != nil {
 		return nil, 0, fmt.Errorf(" error counting bookings: %w", err)
 	}
 
-
-	//  fetch the page 
+	//  fetch the page
 	offset := (page - 1) * limit
 
 	dataQuery := fmt.Sprintf(
 		"SELECT * FROM bookings WHERE %s ORDER BY created_at DESC LIMIT $%d OFFSET $%d",
 		whereClause, argCount, argCount+1,
 	)
-	
+
 	args = append(args, limit, offset)
 
 	var bookings []models.Booking
@@ -367,7 +367,7 @@ func (s *BookingService) CancelBooking(bookingID string, userID string, reason s
 	}
 
 	// update status and set cancellation
-	result, err := database.DB.Exec( `
+	result, err := database.DB.Exec(`
 		UPDATE bookings
 		SET    status              = $1,
 		       cancellation_reason = $2

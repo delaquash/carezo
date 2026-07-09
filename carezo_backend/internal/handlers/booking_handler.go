@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	models "github.com/delaquash/carezo/internal/model"
@@ -29,7 +30,7 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 		response.Error(c, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-
+	fmt.Printf("DEBUG: attempting booking for user_id: %s\n", userID.(string))
 	var req models.CreateBookingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "Invalid Request: "+err.Error())
