@@ -155,11 +155,6 @@ func (s *DriverService) UpdateDriver(driverID string, req *models.UpdateDriverRe
 		args = append(args, *req.PhoneNumber)
 		argCount++
 	}
-	if req.Email != nil {
-		updates = append(updates, fmt.Sprintf("email = $%d", argCount))
-		args = append(args, *req.Email)
-		argCount++
-	}
 	if req.LicenseNumber != nil {
 		updates = append(updates, fmt.Sprintf("license_number = $%d", argCount))
 		args = append(args, *req.LicenseNumber)
@@ -189,6 +184,24 @@ func (s *DriverService) UpdateDriver(driverID string, req *models.UpdateDriverRe
 		languagesJSON, _ := json.Marshal(req.Languages)
 		updates = append(updates, fmt.Sprintf("languages = $%d", argCount))
 		args = append(args, languagesJSON)
+		argCount++
+	}
+
+	if req.YearsOfExperience != nil {
+		updates = append(updates, fmt.Sprintf("years_of_experience = $%d", argCount))
+		args = append(args, *req.YearsOfExperience)
+		argCount++
+	}
+
+	if req.Nationality != nil {
+		updates = append(updates, fmt.Sprintf("nationality = $%d", argCount))
+		args = append(args, *req.Nationality)
+		argCount++
+	}
+
+	if req.Bio != nil {
+		updates = append(updates, fmt.Sprintf("bio = $%d", argCount))
+		args = append(args, *req.Bio)
 		argCount++
 	}
 	if len(updates) == 0 {

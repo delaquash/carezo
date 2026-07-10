@@ -67,11 +67,11 @@ type UpdateDriverRequest struct {
 	Complexion              *string  `json:"complexion,omitempty"`
 	Height                  *int     `json:"height,omitempty"`
 	PhoneNumber             *string  `json:"phone_number,omitempty"`
-	Email                   *string  `json:"email,omitempty"`
 	LicenseNumber           *string  `json:"license_number,omitempty"`
 	LicenseExpiryDate       *string  `json:"license_expiry_date,omitempty"`
 	YearsOfExperience       *int     `json:"years_of_experience,omitempty"`
 	Bio                     *string  `json:"bio,omitempty"`
+	Nationality             *string  `json:"nationality,omitempty"`
 	Languages               []string `json:"languages,omitempty"`
 	IsAvailable             *bool    `json:"is_available,omitempty"`
 	Status                  *string  `json:"status,omitempty"`
