@@ -113,7 +113,6 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	err = tx.Get(&carBookingCount, `
 		SELECT COUNT(*) FROM bookings
 		WHERE car_id        = $1
-		  AND cancelled_at IS NULL
 		  AND status != 'completed'
 		  AND pickup_date < $3
 		  AND return_date > $2	
@@ -131,7 +130,6 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	err = tx.Get(&driverBookingCount, `
 		SELECT COUNT(*) FROM bookings
 		WHERE driver_id        = $1
-		  AND cancelled_at IS NULL
 		  AND status != 'completed'
 		  AND pickup_date < $3
 		  AND return_date > $2	
@@ -208,7 +206,7 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
             status,
             special_requests 
         ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
         )
         RETURNING
 		id,
@@ -221,7 +219,6 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 			actual_return_date,
 			destination,
 			pickup_location,
-			hourly_rate,
 			caution_fee,
 			total_amount,
 			refundable_amount,
@@ -244,7 +241,6 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 		req.ReturnDate,
 		req.Destination,
 		req.PickupLocation,
-		rateToUse,
 		car.CautionFee,
 		totalAmount,
 		refundableAmount,

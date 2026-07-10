@@ -39,7 +39,7 @@ type Booking struct {
 
 	PickUpLocation *string  `json:"pickup_location" db:"pickup_location"`
 
-	HourlyRate    float64 `json:"hourly_rate" db:"hourly_rate"`
+	// HourlyRate    float64 `json:"hourly_rate" db:"hourly_rate"`
 	CautionFee    float64 `json:"caution_fee" db:"caution_fee"`
 	TotalAmount   float64 `json:"total_amount" db:"total_amount"`
 
