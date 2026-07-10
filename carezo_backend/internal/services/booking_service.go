@@ -317,6 +317,8 @@ func (s *BookingService) GetUserBookings(userID string, status string, page, lim
 		conditions = append(conditions, fmt.Sprintf("status = $%d", argCount))
 		args = append(args, status)
 		argCount++
+	} else {
+		conditions  = append(conditions, "status != 'cancelled'")
 	}
 
 	whereClause := conditions[0]
