@@ -10,18 +10,25 @@ import (
 	"github.com/delaquash/carezo/configs"
 )
 
+// CloudinaryServiceInterface defines what any cloudinary service must do
+// Both the real CloudinaryService and MockCloudinaryService implement this
+type CloudinaryServiceInterface interface {
+	UploadImage(file multipart.File, folder string) (*UploadResult, error)
+	UploadMultipleImages(files []*multipart.FileHeader, folder string) ([]UploadResult, error)
+	DeleteImage(publicID string) error
+}
 type CloudinaryService struct {
 	// cld is the authenticated Cloudinary client
 	// It is created once and reused for every upload — no repeated auth
-	cld * cloudinary.Cloudinary
+	cld *cloudinary.Cloudinary
 }
-
 
 type UploadResult struct {
-	URL 		string // The URL of the uploaded file in Cloudinary stored in postgres db for retrieval
-	PublicID 	string // The unique identifier for the uploaded file in Cloudinary used for deletion or further management
-	Format 		string // e.g., "jpg", "png"
+	URL      string // The URL of the uploaded file in Cloudinary stored in postgres db for retrieval
+	PublicID string // The unique identifier for the uploaded file in Cloudinary used for deletion or further management
+	Format   string // e.g., "jpg", "png"
 }
+
 // NewCloudinaryService creates a single authenticated Cloudinary client.
 // Called once in main.go — the single instance is shared across all handlers.
 //
@@ -36,8 +43,8 @@ func NewCloudinaryService(cfg *configs.Config) (*CloudinaryService, error) {
 
 	// create a Cloudinary client
 	cld, err := cloudinary.NewFromParams(
-		cfg.CloudinaryCloudName, 
-		cfg.CloudinaryAPIKey, 
+		cfg.CloudinaryCloudName,
+		cfg.CloudinaryAPIKey,
 		cfg.CloudinaryAPISecret,
 	)
 
@@ -62,7 +69,7 @@ func (s *CloudinaryService) UploadImage(file multipart.File, folder string) (*Up
 		// "f_auto" automatically selects the best format for the image based on the user's browser and device.
 		// "q_auto" automatically adjusts the quality of the image to balance between visual quality and file size.
 		Transformation: "f_auto,q_auto", // Automatically format and optimize quality
-		ResourceType:   "image",          // Specify that the resource being uploaded is an image
+		ResourceType:   "image",         // Specify that the resource being uploaded is an image
 	})
 
 	if err != nil {
@@ -97,21 +104,20 @@ func (s *CloudinaryService) UploadMultipleImages(files []*multipart.FileHeader, 
 		}
 
 		// UploadMultipleImages uploads several files and returns one result per file.
-// Used for car images (up to 5) and review images (up to 3).
-//
-// WHY not upload as a zip:
-// Each image gets its own URL. The app can display image 1 immediately
-// while images 2-5 are still loading — better UX for carousels.
+		// Used for car images (up to 5) and review images (up to 3).
+		//
+		// WHY not upload as a zip:
+		// Each image gets its own URL. The app can display image 1 immediately
+		// while images 2-5 are still loading — better UX for carousels.
 		file.Close() // Ensure the file is closed after processing
-	
 
-	result, err := s.UploadImage(file, folder)
+		result, err := s.UploadImage(file, folder)
 
-	if err != nil {	
-		return nil, fmt.Errorf("failed to upload file %d: %v", i, err)
-	}
+		if err != nil {
+			return nil, fmt.Errorf("failed to upload file %d: %v", i, err)
+		}
 
-	results = append(results, *result)
+		results = append(results, *result)
 	}
 
 	return results, nil
@@ -127,9 +133,9 @@ func (s *CloudinaryService) DeleteImage(publicID string) error {
 	ctx := context.Background()
 	// The Destroy method is called on the Cloudinary client to delete the image.
 	_, err := s.cld.Upload.Destroy(ctx, uploader.DestroyParams{
-		PublicID: publicID,
+		PublicID:     publicID,
 		ResourceType: "image", // Specify that the resource being deleted is an image
-	})	
+	})
 
 	if err != nil {
 		return fmt.Errorf("failed to delete image from Cloudinary: %v", err)
@@ -144,7 +150,7 @@ func (s *CloudinaryService) DeleteImage(publicID string) error {
 // Runs deletions sequentially — good enough for small counts (≤5).
 // For larger counts, you'd parallelise with goroutines.
 
-func(s *CloudinaryService) DeleteMultipleImages(publicIDs []string) {
+func (s *CloudinaryService) DeleteMultipleImages(publicIDs []string) {
 	// Runs in background — caller does not wait for Cloudinary confirmation.
 	// WHY goroutine: deletion is non-critical. If Cloudinary is slow,
 	// the user should not see a delayed response.

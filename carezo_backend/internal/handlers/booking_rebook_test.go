@@ -12,10 +12,10 @@ import (
 
 func TestRebookAfterCancellation(t *testing.T) {
 	// set up the test router and DB
-	app := testhelpers.SetupTestApp(t)
+	app := testhelpers.SetUpTestApp(t)
 
 	// clean up after this test finishes so other tests start fresh
-	t.Cleanup(func() { app.CleanupDB(t) })
+	t.Cleanup(func() { app.CleanUpDB(t) })
 
 	// ── Step 1: Seed test data directly into the test DB ──────────
 	// We insert a test user, car, and driver so we have IDs to work with
@@ -121,8 +121,8 @@ func TestRebookAfterCancellation(t *testing.T) {
 
 func TestCannotDoubleBookSameDates(t *testing.T) {
 	// Sibling test — confirms that WITHOUT cancellation, double booking is blocked
-	app := testhelpers.SetupTestApp(t)
-	t.Cleanup(func() { app.CleanupDB(t) })
+	app := testhelpers.SetUpTestApp(t)
+	t.Cleanup(func() { app.CleanUpDB(t) })
 
 	// seed + token (same as above — could extract to a helper function)
 	userID := "44444444-4444-4444-4444-444444444444"
