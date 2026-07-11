@@ -167,6 +167,7 @@ func main() {
 				bookings.POST("", bookingHandler.CreateBooking)
 				bookings.GET("", bookingHandler.ListUserBooking)
 				bookings.GET("/:id", bookingHandler.GetBooking)
+				bookings.PUT("/:id", bookingHandler.UpdateBooking)
 				bookings.POST("/:id/cancel", bookingHandler.CancelBooking)
 			}
 

@@ -9,6 +9,7 @@ import (
 	"log"
 	"math"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/delaquash/carezo/configs"
@@ -108,20 +109,25 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	}
 
 	// check for car overlapping
-	var carBookingCount int
+	var carBooked bool
 
-	err = tx.Get(&carBookingCount, `
-		SELECT COUNT(*) FROM bookings
-		WHERE car_id        = $1
-		  AND status != 'completed'
-		  AND pickup_date < $3
-		  AND return_date > $2	
+	err = tx.Get(&carBooked, `
+		SELECT EXISTS (
+        SELECT 1 FROM bookings
+        WHERE car_id = $1
+        AND status NOT IN ('cancelled', 'completed')
+        AND (
+            (pickup_date <= $2 AND return_date >= $2) OR
+            (pickup_date <= $3 AND return_date >= $3) OR
+            (pickup_date >= $2 AND return_date <= $3)
+        )
+    )
 	`, req.CarID, req.PickupDate, req.ReturnDate)
 
 	if err != nil {
 		return nil, fmt.Errorf("error checking car availability: %w", err)
 	}
-	if carBookingCount > 0 {
+	if carBooked {
 		return nil, errors.New("car is not available for the selected dates")
 	}
 
@@ -278,6 +284,88 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	return &booking, nil
 }
 
+func (s *BookingService) UpdateBooking(bookingID string, userID string, req *models.UpdateBookingRequest) (*models.Booking, error) {
+	// fetch the booking
+	var booking models.Booking
+	err := database.DB.Get(&booking,
+		`SELECT * FROM bookings WHERE id = $1 AND user_id = $2`,
+		bookingID, userID,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("booking not found")
+		}
+		return nil, fmt.Errorf("database error: %w", err)
+	}
+	// only allow edits if payment is not yet confirmed
+	// once paid, the booking is locked
+
+	if booking.PaymentStatus == "paid" || booking.PaymentStatus == "completed" {
+		return nil, errors.New("cannot edit a booking after payment has been confirmed")
+	}
+
+	// also block cancelled bookings
+	if booking.Status == "cancelled" {
+		return nil, errors.New("cannot edit a cancelled booking")
+	}
+
+	// build dynamic update
+	var updates []string
+	var args []interface{}
+	argCount := 1
+
+	if req.PickupDate != nil {
+		updates = append(updates, fmt.Sprintf("pickup_date = $%d", argCount))
+		args = append(args, *req.PickupDate)
+		argCount++
+	}
+
+	if req.ReturnDate != nil {
+		updates = append(updates, fmt.Sprintf("return_date = $%d", argCount))
+		args = append(args, *req.ReturnDate)
+		argCount++
+	}
+
+	if req.PickupLocation != nil {
+		updates = append(updates, fmt.Sprintf("pickup_location = $%d", argCount))
+		args = append(args, *req.PickupLocation)
+		argCount++
+	}
+	if req.Destination != nil {
+		updates = append(updates, fmt.Sprintf("destination = $%d", argCount))
+		args = append(args, *req.Destination)
+		argCount++
+	}
+	if req.DriverID != nil {
+		updates = append(updates, fmt.Sprintf("driver_id = $%d", argCount))
+		args = append(args, *req.DriverID)
+		argCount++
+	}
+
+	if len(updates) == 0 {
+		return nil, errors.New("no fields to update")
+	}
+
+	updates = append(updates, "updated_at = CURRENT_TIMESTAMP")
+	args = append(args, bookingID)
+
+	query := fmt.Sprintf(`
+		UPDATE bookings SET %s 
+		WHERE id = $%d
+		RETURNING *
+	`, strings.Join(updates, ", "), argCount)
+
+	var updated models.Booking
+	err = database.DB.Get(&updated, query, args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to update booking: %w", err)
+	}
+
+	return &updated, nil
+}
+
 func (s *BookingService) GetBookingByID(bookingID string) (*models.Booking, error) {
 	var booking models.Booking
 
@@ -318,7 +406,7 @@ func (s *BookingService) GetUserBookings(userID string, status string, page, lim
 		args = append(args, status)
 		argCount++
 	} else {
-		conditions  = append(conditions, "status != 'cancelled'")
+		conditions = append(conditions, "status != 'cancelled'")
 	}
 
 	whereClause := conditions[0]

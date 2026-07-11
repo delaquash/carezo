@@ -6,50 +6,48 @@ import (
 	"github.com/google/uuid"
 )
 
-
 const (
-	BookingStatusPending  = "pending"
+	BookingStatusPending   = "pending"
 	BookingStatusConfirmed = "confirmed"
 	BookingStatusCancelled = "cancelled"
 	BookingStatusCompleted = "completed"
-	BookingStatusActive = "active"
+	BookingStatusActive    = "active"
 
-	PaymentStatusPending  = "pending"
+	PaymentStatusPending   = "pending"
 	PaymentStatusCompleted = "completed"
 	PaymentStatusFailed    = "failed"
 	PaymentStatusRefunded  = "refunded"
-	PaymentStatusPaid = "paid"
+	PaymentStatusPaid      = "paid"
 )
 
 type Booking struct {
-	ID        string `json:"id" db:"id"`
+	ID               string `json:"id" db:"id"`
 	BookingReference string `json:"booking_reference" db:"booking_reference"`
 	// foreign keys
 	UserID   uuid.UUID `json:"user_id" db:"user_id"`
-    CarID    uuid.UUID `json:"car_id" db:"car_id"`
+	CarID    uuid.UUID `json:"car_id" db:"car_id"`
 	DriverID uuid.UUID `json:"driver_id" db:"driver_id"`
 
-
 	// Booking details
-	PickUpDate   time.Time `json:"pickup_date" db:"pickup_date"`
-	ReturnDate   time.Time `json:"return_date" db:"return_date"`
+	PickUpDate       time.Time  `json:"pickup_date" db:"pickup_date"`
+	ReturnDate       time.Time  `json:"return_date" db:"return_date"`
 	ActualReturnDate *time.Time `json:"actual_return_date,omitempty" db:"actual_return_date"`
 
 	Destination string `json:"destination" db:"destination"`
 
-	PickUpLocation *string  `json:"pickup_location" db:"pickup_location"`
+	PickUpLocation *string `json:"pickup_location" db:"pickup_location"`
 
 	// HourlyRate    float64 `json:"hourly_rate" db:"hourly_rate"`
-	CautionFee    float64 `json:"caution_fee" db:"caution_fee"`
-	TotalAmount   float64 `json:"total_amount" db:"total_amount"`
+	CautionFee  float64 `json:"caution_fee" db:"caution_fee"`
+	TotalAmount float64 `json:"total_amount" db:"total_amount"`
 
 	RefundableAmount float64 `json:"refundable_amount" db:"refundable_amount"`
 
 	// payment
-	PaymentStatus string `json:"payment_status" db:"payment_status"`
-	PaymentReference *string `json:"payment_reference" db:"payment_reference"`
-	PaidAt   *time.Time `json:"paid_at" db:"paid_at"`
-	RefundedAt  *time.Time `json:"refunded_at" db:"refunded_at"`
+	PaymentStatus    string     `json:"payment_status" db:"payment_status"`
+	PaymentReference *string    `json:"payment_reference" db:"payment_reference"`
+	PaidAt           *time.Time `json:"paid_at" db:"paid_at"`
+	RefundedAt       *time.Time `json:"refunded_at" db:"refunded_at"`
 
 	Status string `json:"status" db:"status"`
 
@@ -60,7 +58,6 @@ type Booking struct {
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
-
 
 type CreateBookingRequest struct {
 	CarID           uuid.UUID `json:"car_id"            binding:"required"`
@@ -77,7 +74,7 @@ type CancelBookingRequest struct {
 }
 
 type ListBookingsRequest struct {
-	Status string `form:"status"`  // optional – filter by booking status
+	Status string `form:"status"` // optional – filter by booking status
 	Page   int    `form:"page"`
 	Limit  int    `form:"limit"`
 }
@@ -103,6 +100,13 @@ type DriverSummary struct {
 	Gender          string    `json:"gender"`
 	AverageRating   float64   `json:"average_rating"`
 	ProfileImageURL *string   `json:"profile_image_url,omitempty"`
+}
+type UpdateBookingRequest struct {
+	PickupDate     *time.Time `json:"pickup_date,omitempty"`
+	ReturnDate     *time.Time `json:"return_date,omitempty"`
+	PickupLocation *string    `json:"pickup_location,omitempty"`
+	Destination    *string    `json:"destination,omitempty"`
+	DriverID       *string    `json:"driver_id,omitempty"`
 }
 
 type PaginatedBookingsResponse struct {

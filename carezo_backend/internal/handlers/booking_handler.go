@@ -58,6 +58,32 @@ func (h *BookingHandler) GetBooking(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Booking retrieved successfully", booking)
 }
 
+func (h *BookingHandler) UpdateBooking(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	bookingID := c.Param("id")
+
+	var req models.UpdateBookingRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "invalid request: "+err.Error())
+		return
+	}
+
+	booking, err := h.bookingService.UpdateBooking(bookingID, userID.(string), &req)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "booking updated successfully", booking)
+}
+
 // GET /api/bookings
 //    ?status=pending&page=1&limit=10
 

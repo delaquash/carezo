@@ -1,0 +1,14 @@
+# run all tests
+go test ./...
+
+# run tests in one folder
+go test ./internal/handlers/...
+
+# run one specific test by name
+go test ./internal/handlers/ -run TestRoleEnforcement
+
+# run with verbose output (see each test name)
+go test ./... -v
+
+# run with coverage report
+go test ./... -cover
