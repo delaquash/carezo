@@ -241,3 +241,34 @@ func (app *TestApp) LoginTestUser(t *testing.T, email, password string) string {
 		return token
 
 }
+
+func (app *TestApp) LoginTestAdmin(t *testing.T) string {
+	t.Helper()
+
+	password := "Admin123!"
+	hashedPassword, _ := utils.HashPassword(password)
+
+	_, err := app.DB.Exec(`
+		INSERT INTO users (
+			id, email, password_hash, first_name, last_name, 
+			role, status, email_verified)
+			VALUES (gen_random_uuid(), 'admin_test@carzo.com' $1, 'Admin',
+			'Test', 'admin', 'active', true)
+			ON CONFLICT (email) DO UPDATE SET password_hash = $1
+		
+	`, hashedPassword)
+	require.NoError(t, err)
+	
+	w := app.MakeRequest("POST", "/api/auth/login", map[string]interface{}{
+		"email":  "admin@carezo.com",
+		"password": password,
+	}, "")
+	require.Equal(t, http.StatusOK, w.Code,
+		"admin login failed: %s", w.Body.String())
+
+	var resp map[string]interface{}
+	json.NewDecoder(w.Body).Decode(&resp)
+	data := resp["data"].(map[string]interface{})
+	return data["token"].(string)
+	
+}
