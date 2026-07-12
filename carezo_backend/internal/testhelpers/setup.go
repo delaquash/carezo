@@ -4,9 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"mime/multipart"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+	"uuid"
+
+	// "uuid"
 
 	"github.com/delaquash/carezo/configs"
 	"github.com/delaquash/carezo/internal/database"
@@ -15,6 +19,8 @@ import (
 	"github.com/delaquash/carezo/internal/services"
 	"github.com/delaquash/carezo/internal/utils"
 	"github.com/gin-gonic/gin"
+
+	// "github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
 )
@@ -191,3 +197,47 @@ func (m *MockCloudinaryService) UploadMultipleImages(files []*multipart.FileHead
 }
 
 func (m *MockCloudinaryService) DeleteImage(publicID string) error { return nil }
+
+
+func (app *TestApp) LoginTestUser(t *testing.T, email, password string) string {
+	t.Helper()
+
+	// insert user directly(skip email verification for test)
+	userID := uuid.New().String()
+	hashedPassword, _ := utils.HashPassword(password)
+
+	
+    _, err := app.DB.Exec(`
+        INSERT INTO users (
+            id, email, password_hash, first_name, last_name,
+            role, status, email_verified
+        ) VALUES ($1, $2, $3, 'Test', 'User', 'user', 'active', true)
+        ON CONFLICT (email) DO UPDATE SET password_hash = $3
+        RETURNING id
+    `, userID, email, hashedPassword)
+    require.NoError(t, err, "failed to insert test user")
+
+	// login thru actual endpoint to get real token
+	w := app.MakeRequest("POST", "/api/auth/login", map[string]interface{}{
+		"email": email,
+		"password": password,
+	}, "")
+
+	require.Equal(t, http.StatusOK, w.Code, 
+		"login failed: %s", w.Body.String())
+
+		// extract the token from response
+		var resp map[string]interface{}
+		err = json.NewDecoder(w.Body).Decode(&resp)
+		require.NoError(t, err)
+
+		data, ok := resp["data"].(map[string]interface{})
+		require.True(t, ok, "response data is missing")
+
+		token, ok := data["token"].(string)
+		require.True(t, ok, "token is mission from login response")
+		require.NotEmpty(t, token, "token should not be empty")
+
+		return token
+
+}
