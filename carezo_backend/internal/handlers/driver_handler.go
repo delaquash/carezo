@@ -15,10 +15,10 @@ import (
 type DriverHandler struct {
 	driverService      *services.DriverService
 	reviewServices     *services.ReviewService
-	cloudinaryServices *services.CloudinaryService
+	cloudinaryServices services.CloudinaryServiceInterface
 }
 
-func NewDriverHandler(cloudinaryServices *services.CloudinaryService) *DriverHandler {
+func NewDriverHandler(cloudinaryServices services.CloudinaryServiceInterface) *DriverHandler {
 
 	return &DriverHandler{
 		driverService:      services.NewDriverService(),

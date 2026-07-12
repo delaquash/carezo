@@ -14,12 +14,12 @@ import (
 
 // Carhandler bundles everything a car endpoint need to do it jobs
 type CarHandler struct {
-	carService        *services.CarService        //talks to Postgresql for car CRUD
-	cloudinaryService *services.CloudinaryService //talks to cloudinary for image delete
+	carService        *services.CarService                //talks to Postgresql for car CRUD
+	cloudinaryService services.CloudinaryServiceInterface // ← interface not *services.CloudinaryService
 }
 
 // constructor -- main.go calls this one once and passes in the shared cloudinaryservice
-func NewCarHandler(cloudinaryService *services.CloudinaryService) *CarHandler {
+func NewCarHandler(cloudinaryService services.CloudinaryServiceInterface) *CarHandler {
 	return &CarHandler{
 		carService:        services.NewCarService(), //create a fresh CarServices
 		cloudinaryService: cloudinaryService,        //reuse the same cloudinary client everywhere
@@ -40,7 +40,7 @@ func (h *CarHandler) CreateCar(c *gin.Context) {
 
 	// images[] and image_public_ids[] MUST be the same length or we lose track
 	// of which public_id belongs to which URL — breaks future deletion
-	if len(req.Images) > 0  && len(req.Images) != len(req.ImagePublicIDs) {
+	if len(req.Images) > 0 && len(req.Images) != len(req.ImagePublicIDs) {
 		response.Error(c, http.StatusBadRequest, "images and image_public_ids must have the same number of items")
 		return
 	}
@@ -318,7 +318,6 @@ func (h *CarHandler) GetNearByCars(c *gin.Context) {
 	})
 }
 
-
 // GET /api/cars/popular — ranked by (rating × 0.6) + (bookings × weight)
 // GET /api/cars/popular?page=1&per_page=10
 func (h *CarHandler) GetPopularCars(c *gin.Context) {
@@ -333,7 +332,7 @@ func (h *CarHandler) GetPopularCars(c *gin.Context) {
 		fmt.Sscanf(pp, "%d", &perPage)
 	}
 
-	cars, total, err := h.carService.GetPopularCars(page, perPage)  // scoring happens inside the service
+	cars, total, err := h.carService.GetPopularCars(page, perPage) // scoring happens inside the service
 
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())

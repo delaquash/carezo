@@ -45,9 +45,9 @@ func SetUpTestApp(t *testing.T) *TestApp {
 		DBHost:     "localhost",
 		DBPort:     "5432",
 		DBUser:     "carezo_user",
-		DBPassword: "password",
+		DBPassword: "Equarshie85",
 		DBName:     "carezo_test_db", // ← separate test DB, NOT carezo_db
-		JWTSecret:  "test-secret-key",
+		JWTSecret:  "Equarshie85@",
 		AppEnv:     "test",
 	}
 
@@ -165,10 +165,10 @@ func ParseResponse(w *httptest.ResponseRecorder) map[string]interface{} {
 }
 
 // GenerateTestToken creates a JWT for testing without going through login
-func GenerateTestToken(userID string, role string, secret string) string {
+func GenerateTestToken(userID string, role string, cfg *configs.Config) string {
 	// use your existing JWT generation function
 	// this avoids needing to call /api/auth/login in every test
-	token, _ := utils.GenerateAccessToken(userID, role, secret)
+	token, _ := utils.GenerateAccessToken(userID, role, cfg.JWTSecret, cfg)
 	return token
 }
 
@@ -176,6 +176,18 @@ func GenerateTestToken(userID string, role string, secret string) string {
 type MockCloudinaryService struct{}
 
 func (m *MockCloudinaryService) UploadImage(file multipart.File, folder string) (*services.UploadResult, error) {
-	return &services.UploadResult{URL: "https://mock.cloudinary.com/test.jpg", PublicID: "test/123"}, nil
+	return &services.UploadResult{
+		URL: "https://mock.cloudinary.com/test.jpg", 
+		PublicID: "carezo/test/mock123",
+		Format: "jpg", 
+		}, nil
 }
+
+func (m *MockCloudinaryService) UploadMultipleImages(files []*multipart.FileHeader, folder string) ([]services.UploadResult, error) {
+    return []services.UploadResult{{
+        URL:      "https://mock.cloudinary.com/test.jpg",
+        PublicID: "carezo/test/mock123",
+    }}, nil
+}
+
 func (m *MockCloudinaryService) DeleteImage(publicID string) error { return nil }

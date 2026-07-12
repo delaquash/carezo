@@ -46,18 +46,20 @@ func TestRebookAfterCancellation(t *testing.T) {
 	require.NoError(t, err, "failed to seed test car")
 
 	_, err = app.DB.Exec(`
-        INSERT INTO drivers (id, first_name, last_name, age, gender,
-            license_number, license_expiry_date, years_of_experience,
-            is_available, status)
-        VALUES ($1, 'John', 'Doe', 35, 'male',
-            'TEST-LIC-001', '2030-01-01', 5, true, 'active')
-        ON CONFLICT (id) DO NOTHING
-    `, driverID)
+    INSERT INTO drivers (
+        id, first_name, last_name, age, gender, state,
+        phone_number, email, license_number, license_expiry_date,
+        years_of_experience, height, is_available, status
+    ) VALUES (
+        $1, 'John', 'Doe', 35, 'male', 'Lagos',
+        '+2348012345678', 'john.doe@test.com', 'TEST-LIC-001', '2030-01-01',
+        5, 170, true, 'active'
+    )
+    ON CONFLICT (id) DO NOTHING
+`, driverID)
 	require.NoError(t, err, "failed to seed test driver")
-
 	// generate a JWT for our test user without calling /api/auth/login
-	userToken := testhelpers.GenerateTestToken(userID, "user", app.Config.JWTSecret)
-
+	userToken := testhelpers.GenerateTestToken("user-uuid-001", "user", app.Config)
 	// ── Step 2: Book the car for July 20-25 ───────────────────────
 	bookingBody := map[string]interface{}{
 		"car_id":          carID,
@@ -80,7 +82,7 @@ func TestRebookAfterCancellation(t *testing.T) {
 	bookingID := data["id"].(string)
 	assert.NotEmpty(t, bookingID, "booking ID should not be empty")
 
-	t.Logf("✅ Booking created: %s", bookingID)
+	t.Logf("Booking created: %s", bookingID)
 
 	// ── Step 3: Cancel that booking ───────────────────────────────
 	cancelBody := map[string]interface{}{
@@ -99,7 +101,7 @@ func TestRebookAfterCancellation(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "cancelled", status, "booking status should be 'cancelled' after cancel")
 
-	t.Logf("✅ Booking cancelled: %s", bookingID)
+	t.Logf("Booking cancelled: %s", bookingID)
 
 	// ── Step 4: Try to rebook for the SAME dates ──────────────────
 	// THIS IS THE KEY TEST — before the fix this would return 400
@@ -133,8 +135,7 @@ func TestCannotDoubleBookSameDates(t *testing.T) {
 	app.DB.Exec(`INSERT INTO cars (id, model, year, color, license_plate, transmission, fuel_type, seating_capacity, hourly_rate, caution_fee, is_available, status) VALUES ($1, 'Corolla', 2021, 'White', 'TEST-002', 'automatic', 'petrol', 5, '{"weekday":5000,"weekend":7000,"holiday":10000}'::jsonb, 50000, true, 'active') ON CONFLICT DO NOTHING`, carID)
 	app.DB.Exec(`INSERT INTO drivers (id, first_name, last_name, age, gender, license_number, license_expiry_date, years_of_experience, is_available, status) VALUES ($1, 'Jane', 'Doe', 30, 'female', 'TEST-LIC-002', '2030-01-01', 3, true, 'active') ON CONFLICT DO NOTHING`, driverID)
 
-	token := testhelpers.GenerateTestToken(userID, "user", app.Config.JWTSecret)
-
+	adminToken := testhelpers.GenerateTestToken("admin-uuid-001", "admin", app.Config)
 	body := map[string]interface{}{
 		"car_id": carID, "driver_id": driverID,
 		"pickup_date":     "2026-08-01T09:00:00Z",
@@ -143,11 +144,11 @@ func TestCannotDoubleBookSameDates(t *testing.T) {
 	}
 
 	// first booking should succeed
-	w := app.MakeRequest("POST", "/api/bookings", body, token)
+	w := app.MakeRequest("POST", "/api/bookings", body, adminToken)
 	assert.Equal(t, http.StatusCreated, w.Code, "first booking should succeed")
 
 	// second booking for same car/dates should FAIL
-	w = app.MakeRequest("POST", "/api/bookings", body, token)
+	w = app.MakeRequest("POST", "/api/bookings", body, adminToken)
 	assert.Equal(t, http.StatusBadRequest, w.Code,
 		"double booking same dates should fail")
 

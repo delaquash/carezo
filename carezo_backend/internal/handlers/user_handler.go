@@ -13,10 +13,10 @@ import (
 
 type UserHandler struct {
 	userService       *services.UserService
-	cloudinaryService *services.CloudinaryService // needed to delete OLD profile pictures
+	cloudinaryService services.CloudinaryServiceInterface // needed to delete OLD profile pictures
 }
 
-func NewUserHandler(cloudinaryService *services.CloudinaryService) *UserHandler {
+func NewUserHandler(cloudinaryService services.CloudinaryServiceInterface) *UserHandler {
 	return &UserHandler{
 		userService:       services.NewUserService(database.DB),
 		cloudinaryService: cloudinaryService,
