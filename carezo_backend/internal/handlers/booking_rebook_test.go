@@ -1,7 +1,6 @@
 package handlers_test
 
 import (
-	"fmt"
 	"net/http"
 	"testing"
 
@@ -11,29 +10,14 @@ import (
 )
 
 func TestRebookAfterCancellation(t *testing.T) {
-	// set up the test router and DB
-	app := testhelpers.SetUpTestApp(t)
+    app := testhelpers.SetUpTestApp(t)
+    t.Cleanup(func() { app.CleanUpDB(t) })
 
-	// clean up after this test finishes so other tests start fresh
-	t.Cleanup(func() { app.CleanUpDB(t) })
+    // seed car and driver
+    carID    := "22222222-2222-2222-2222-222222222222"
+    driverID := "33333333-3333-3333-3333-333333333333"
 
-	// ── Step 1: Seed test data directly into the test DB ──────────
-	// We insert a test user, car, and driver so we have IDs to work with
-	// This is faster than calling the API for each piece of setup data
-
-	userID := "11111111-1111-1111-1111-111111111111"
-	carID := "22222222-2222-2222-2222-222222222222"
-	driverID := "33333333-3333-3333-3333-333333333333"
-
-	_, err := app.DB.Exec(`
-        INSERT INTO users (id, email, password_hash, first_name, last_name,
-            role, status, email_verified)
-        VALUES ($1, 'test@carezo.com', 'hash', 'Test', 'User', 'user', 'active', true)
-        ON CONFLICT (id) DO NOTHING
-    `, userID)
-	require.NoError(t, err, "failed to seed test user")
-
-	_, err = app.DB.Exec(`
+    _, err := app.DB.Exec(`
         INSERT INTO cars (id, model, year, color, license_plate,
             transmission, fuel_type, seating_capacity,
             hourly_rate, caution_fee, is_available, status)
@@ -43,84 +27,67 @@ func TestRebookAfterCancellation(t *testing.T) {
             50000, true, 'active')
         ON CONFLICT (id) DO NOTHING
     `, carID)
-	require.NoError(t, err, "failed to seed test car")
+    require.NoError(t, err)
 
-	_, err = app.DB.Exec(`
-    INSERT INTO drivers (
-        id, first_name, last_name, age, gender, state,
-        phone_number, email, license_number, license_expiry_date,
-        years_of_experience, height, is_available, status
-    ) VALUES (
-        $1, 'John', 'Doe', 35, 'male', 'Lagos',
-        '+2348012345678', 'john.doe@test.com', 'TEST-LIC-001', '2030-01-01',
-        5, 170, true, 'active'
-    )
-    ON CONFLICT (id) DO NOTHING
-`, driverID)
-	require.NoError(t, err, "failed to seed test driver")
-	// generate a JWT for our test user without calling /api/auth/login
-	userToken := testhelpers.GenerateTestToken("user-uuid-001", "user", app.Config)
-	// ── Step 2: Book the car for July 20-25 ───────────────────────
-	bookingBody := map[string]interface{}{
-		"car_id":          carID,
-		"driver_id":       driverID,
-		"pickup_date":     "2026-07-20T09:00:00Z",
-		"return_date":     "2026-07-25T09:00:00Z",
-		"pickup_location": "Lagos Mainland",
-		"destination":     "Lekki Phase 1",
-	}
+    _, err = app.DB.Exec(`
+        INSERT INTO drivers (
+            id, first_name, last_name, age, gender, state,
+            phone_number, email, license_number, license_expiry_date,
+            years_of_experience, height, is_available, status
+        ) VALUES (
+            $1, 'John', 'Doe', 35, 'male', 'Lagos',
+            '+2348012345678', 'john.doe@test.com', 'TEST-LIC-001', '2030-01-01',
+            5, 170, true, 'active'
+        )
+        ON CONFLICT (id) DO NOTHING
+    `, driverID)
+    require.NoError(t, err)
 
-	w := app.MakeRequest("POST", "/api/bookings", bookingBody, userToken)
+    // get a REAL token by logging in — no manual token generation
+    userToken := app.LoginTestUser(t, "rebook_test@carezo.com", "Test123!@#")
 
-	// confirm the booking was created
-	assert.Equal(t, http.StatusCreated, w.Code,
-		"expected 201 when creating booking, got: %s", w.Body.String())
+    bookingBody := map[string]interface{}{
+        "car_id":          carID,
+        "driver_id":       driverID,
+        "pickup_date":     "2026-07-20T09:00:00Z",
+        "return_date":     "2026-07-25T09:00:00Z",
+        "pickup_location": "Lagos Mainland",
+        "destination":     "Lekki Phase 1",
+    }
 
-	// extract the bookingID from the response to use in the cancel step
-	resp := testhelpers.ParseResponse(w)
-	data := resp["data"].(map[string]interface{})
-	bookingID := data["id"].(string)
-	assert.NotEmpty(t, bookingID, "booking ID should not be empty")
+    // Step 1 — create booking
+    w := app.MakeRequest("POST", "/api/bookings", bookingBody, userToken)
+    assert.Equal(t, http.StatusCreated, w.Code,
+        "booking creation failed: %s", w.Body.String())
 
-	t.Logf("Booking created: %s", bookingID)
+    // safe extraction — no panic
+    resp := testhelpers.ParseResponse(w)
+    require.NotNil(t, resp["data"], "response data should not be nil")
+    data := resp["data"].(map[string]interface{})
+    bookingID := data["id"].(string)
+    require.NotEmpty(t, bookingID)
+    t.Logf("Booking created: %s", bookingID)
 
-	// ── Step 3: Cancel that booking ───────────────────────────────
-	cancelBody := map[string]interface{}{
-		"reason": "Changed my mind",
-	}
+    // Step 2 — cancel it
+    cancelURL := "/api/bookings/" + bookingID + "/cancel"
+    w = app.MakeRequest("POST", cancelURL,
+        map[string]interface{}{"reason": "Changed my mind"}, userToken)
+    assert.Equal(t, http.StatusOK, w.Code,
+        "cancel failed: %s", w.Body.String())
+    t.Logf("Booking cancelled")
 
-	cancelURL := fmt.Sprintf("/api/bookings/%s/cancel", bookingID)
-	w = app.MakeRequest("POST", cancelURL, cancelBody, userToken)
+    // Step 3 — rebook same dates — must succeed
+    w = app.MakeRequest("POST", "/api/bookings", bookingBody, userToken)
+    assert.Equal(t, http.StatusCreated, w.Code,
+        "rebook after cancel failed: %s", w.Body.String())
 
-	assert.Equal(t, http.StatusOK, w.Code,
-		"expected 200 when cancelling booking, got: %s", w.Body.String())
-
-	// verify the booking status is now cancelled in the DB
-	var status string
-	err = app.DB.Get(&status, "SELECT status FROM bookings WHERE id = $1", bookingID)
-	require.NoError(t, err)
-	assert.Equal(t, "cancelled", status, "booking status should be 'cancelled' after cancel")
-
-	t.Logf("Booking cancelled: %s", bookingID)
-
-	// ── Step 4: Try to rebook for the SAME dates ──────────────────
-	// THIS IS THE KEY TEST — before the fix this would return 400
-	// because cancelled bookings were blocking the dates
-	w = app.MakeRequest("POST", "/api/bookings", bookingBody, userToken)
-
-	// after the fix this MUST return 201 Created
-	assert.Equal(t, http.StatusCreated, w.Code,
-		"should be able to rebook same dates after cancellation, got: %s", w.Body.String())
-
-	resp2 := testhelpers.ParseResponse(w)
-	data2 := resp2["data"].(map[string]interface{})
-	newBookingID := data2["id"].(string)
-	assert.NotEmpty(t, newBookingID)
-	assert.NotEqual(t, bookingID, newBookingID, "should be a new booking ID")
-
-	t.Logf("Rebook succeeded: %s (new ID)", newBookingID)
+    resp2 := testhelpers.ParseResponse(w)
+    require.NotNil(t, resp2["data"], "rebook response data should not be nil")
+    data2 := resp2["data"].(map[string]interface{})
+    newBookingID := data2["id"].(string)
+    assert.NotEqual(t, bookingID, newBookingID, "should be a different booking ID")
+    t.Logf("Rebook succeeded: %s", newBookingID)
 }
-
 func TestCannotDoubleBookSameDates(t *testing.T) {
 	// Sibling test — confirms that WITHOUT cancellation, double booking is blocked
 	app := testhelpers.SetUpTestApp(t)

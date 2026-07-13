@@ -10,8 +10,6 @@ import (
 	"testing"
 	"uuid"
 
-	// "uuid"
-
 	"github.com/delaquash/carezo/configs"
 	"github.com/delaquash/carezo/internal/database"
 	"github.com/delaquash/carezo/internal/handlers"
