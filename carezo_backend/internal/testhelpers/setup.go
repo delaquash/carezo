@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
-	"uuid"
 
 	"github.com/delaquash/carezo/configs"
 	"github.com/delaquash/carezo/internal/database"
@@ -17,8 +16,8 @@ import (
 	"github.com/delaquash/carezo/internal/services"
 	"github.com/delaquash/carezo/internal/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
-	// "github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
 )
@@ -181,21 +180,20 @@ type MockCloudinaryService struct{}
 
 func (m *MockCloudinaryService) UploadImage(file multipart.File, folder string) (*services.UploadResult, error) {
 	return &services.UploadResult{
-		URL: "https://mock.cloudinary.com/test.jpg", 
+		URL:      "https://mock.cloudinary.com/test.jpg",
 		PublicID: "carezo/test/mock123",
-		Format: "jpg", 
-		}, nil
+		Format:   "jpg",
+	}, nil
 }
 
 func (m *MockCloudinaryService) UploadMultipleImages(files []*multipart.FileHeader, folder string) ([]services.UploadResult, error) {
-    return []services.UploadResult{{
-        URL:      "https://mock.cloudinary.com/test.jpg",
-        PublicID: "carezo/test/mock123",
-    }}, nil
+	return []services.UploadResult{{
+		URL:      "https://mock.cloudinary.com/test.jpg",
+		PublicID: "carezo/test/mock123",
+	}}, nil
 }
 
 func (m *MockCloudinaryService) DeleteImage(publicID string) error { return nil }
-
 
 func (app *TestApp) LoginTestUser(t *testing.T, email, password string) string {
 	t.Helper()
@@ -204,8 +202,7 @@ func (app *TestApp) LoginTestUser(t *testing.T, email, password string) string {
 	userID := uuid.New().String()
 	hashedPassword, _ := utils.HashPassword(password)
 
-	
-    _, err := app.DB.Exec(`
+	_, err := app.DB.Exec(`
         INSERT INTO users (
             id, email, password_hash, first_name, last_name,
             role, status, email_verified
@@ -213,30 +210,30 @@ func (app *TestApp) LoginTestUser(t *testing.T, email, password string) string {
         ON CONFLICT (email) DO UPDATE SET password_hash = $3
         RETURNING id
     `, userID, email, hashedPassword)
-    require.NoError(t, err, "failed to insert test user")
+	require.NoError(t, err, "failed to insert test user")
 
 	// login thru actual endpoint to get real token
 	w := app.MakeRequest("POST", "/api/auth/login", map[string]interface{}{
-		"email": email,
+		"email":    email,
 		"password": password,
 	}, "")
 
-	require.Equal(t, http.StatusOK, w.Code, 
+	require.Equal(t, http.StatusOK, w.Code,
 		"login failed: %s", w.Body.String())
 
-		// extract the token from response
-		var resp map[string]interface{}
-		err = json.NewDecoder(w.Body).Decode(&resp)
-		require.NoError(t, err)
+	// extract the token from response
+	var resp map[string]interface{}
+	err = json.NewDecoder(w.Body).Decode(&resp)
+	require.NoError(t, err)
 
-		data, ok := resp["data"].(map[string]interface{})
-		require.True(t, ok, "response data is missing")
+	data, ok := resp["data"].(map[string]interface{})
+	require.True(t, ok, "response data is missing")
 
-		token, ok := data["token"].(string)
-		require.True(t, ok, "token is mission from login response")
-		require.NotEmpty(t, token, "token should not be empty")
+	token, ok := data["token"].(string)
+	require.True(t, ok, "token is mission from login response")
+	require.NotEmpty(t, token, "token should not be empty")
 
-		return token
+	return token
 
 }
 
@@ -256,9 +253,9 @@ func (app *TestApp) LoginTestAdmin(t *testing.T) string {
 		
 	`, hashedPassword)
 	require.NoError(t, err)
-	
+
 	w := app.MakeRequest("POST", "/api/auth/login", map[string]interface{}{
-		"email":  "admin@carezo.com",
+		"email":    "admin@carezo.com",
 		"password": password,
 	}, "")
 	require.Equal(t, http.StatusOK, w.Code,
@@ -268,5 +265,5 @@ func (app *TestApp) LoginTestAdmin(t *testing.T) string {
 	json.NewDecoder(w.Body).Decode(&resp)
 	data := resp["data"].(map[string]interface{})
 	return data["token"].(string)
-	
+
 }
