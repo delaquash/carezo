@@ -136,9 +136,9 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	err = tx.Get(&driverBookingCount, `
 		SELECT COUNT(*) FROM bookings
 		WHERE driver_id        = $1
-		  AND status != 'completed'
-		  AND pickup_date < $3
-		  AND return_date > $2	
+		  	AND status NOT IN ('cancelled', 'completed')
+  			AND pickup_date < $3
+  			AND return_date > $2
 	`, req.DriverID, req.PickupDate, req.ReturnDate)
 
 	if err != nil {

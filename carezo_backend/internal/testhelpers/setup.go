@@ -45,13 +45,14 @@ func SetUpTestApp(t *testing.T) *TestApp {
 	}
 
 	cfg := &configs.Config{
-		DBHost:     "localhost",
-		DBPort:     "5432",
-		DBUser:     "carezo_user",
-		DBPassword: "Equarshie85",
-		DBName:     "carezo_test_db", // ← separate test DB, NOT carezo_db
-		JWTSecret:  "Equarshie85@",
-		AppEnv:     "test",
+		DBHost:             "localhost",
+		DBPort:             "5432",
+		DBUser:             "carezo_user",
+		DBPassword:         "Equarshie85",
+		DBName:             "carezo_test_db", // ← separate test DB, NOT carezo_db
+		JWTSecret:          "Equarshie85@",
+		JWTExpirationHours: 24,
+		AppEnv:             "test",
 	}
 
 	db, err := database.ConnectPostgres(cfg)
@@ -202,14 +203,15 @@ func (app *TestApp) LoginTestUser(t *testing.T, email, password string) string {
 	userID := uuid.New().String()
 	hashedPassword, _ := utils.HashPassword(password)
 
-	_, err := app.DB.Exec(`
-        INSERT INTO users (
-            id, email, password_hash, first_name, last_name,
-            role, status, email_verified
-        ) VALUES ($1, $2, $3, 'Test', 'User', 'user', 'active', true)
-        ON CONFLICT (email) DO UPDATE SET password_hash = $3
-        RETURNING id
-    `, userID, email, hashedPassword)
+	var actualUserID string
+	err := app.DB.QueryRow(`
+    INSERT INTO users (
+        id, email, password_hash, first_name, last_name,
+        role, status, email_verified
+    ) VALUES ($1, $2, $3, 'Test', 'User', 'user', 'active', true)
+    ON CONFLICT (email) DO UPDATE SET password_hash = $3
+    RETURNING id
+`, userID, email, hashedPassword).Scan(&actualUserID)
 	require.NoError(t, err, "failed to insert test user")
 
 	// login thru actual endpoint to get real token
@@ -229,9 +231,9 @@ func (app *TestApp) LoginTestUser(t *testing.T, email, password string) string {
 	data, ok := resp["data"].(map[string]interface{})
 	require.True(t, ok, "response data is missing")
 
-	token, ok := data["token"].(string)
-	require.True(t, ok, "token is mission from login response")
-	require.NotEmpty(t, token, "token should not be empty")
+	token, ok := data["access_token"].(string)
+	require.True(t, ok, "access_token is missing from login response")
+	require.NotEmpty(t, token, "access_token should not be empty")
 
 	return token
 
