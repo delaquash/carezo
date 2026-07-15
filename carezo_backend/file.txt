@@ -84,3 +84,10 @@ go run cmd/api/main.go
 curl -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"phone_number":"+2348012345678","email":"test@example.com","password":"Test123!"}'
+
+
+  <!-- docker exec -it carezo-postgres psql -U carezo_user -d carezo_db -->
+
+<!-- docker exec -it carezo-postgres psql -U carezo_user -d carezo_test_db -->
+
+go test ./internal/handlers/ -run TestRebookAfterCancellation -v -count=1

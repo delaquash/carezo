@@ -79,85 +79,94 @@ func TestWebhookIdempotency(t *testing.T) {
 		}
 	}`)
 
-	   // sign the payload with your webhook secret
-    // (set PAYSTACK_WEBHOOK_SECRET in your test config)
-    signature := generateWebhookSignature(
-        webhookPayload,
-        app.Config.PaystackWebhookSecret,
-    )
+	// sign the payload with your webhook secret
+	// (set PAYSTACK_WEBHOOK_SECRET in your test config)
+	signature := generateWebhookSignature(
+		webhookPayload,
+		app.Config.PaystackWebhookSecret,
+	)
 
 	// send the webhook the first time
-	req1 := testhelpers.NewRequest("POST", "/api/payment/webhook", webhookPayload)
-	req1.Header.Set("Content-Type", "application/json")
-	req1.Header.Set("x-paystack-signature", signature)
+	w1 := app.MakeRawRequest(
+		"POST",
+		"/api/payments/webhook", // fixed: plural "payments", matches your route
+		webhookPayload,
+		map[string]string{"x-paystack-signature": signature},
+	)
+	assert.Equal(t, http.StatusOK, w1.Code,
+		"first webhook call should return 200, got: %s", w1.Body.String())
 
-	 w1 := app.MakeRequest(req1)
-    assert.Equal(t, http.StatusOK, w1.Code,
-        "first webhook call should return 200, got: %s", w1.Body.String())
+	// verify the booking is now confirmed after first webhook
+	var bookingStatus, paymentStatus string
+	err = app.DB.QueryRow(
+		"SELECT status, payment_status FROM bookings WHERE id = $1",
+		bookingID,
+	).Scan(&bookingStatus, &paymentStatus)
+	require.NoError(t, err)
 
-    // verify the booking is now confirmed after first webhook
-    var bookingStatus, paymentStatus string
-    err = app.DB.QueryRow(
-        "SELECT status, payment_status FROM bookings WHERE id = $1",
-        bookingID,
-    ).Scan(&bookingStatus, &paymentStatus)
-    require.NoError(t, err)
+	assert.Equal(t, "confirmed", bookingStatus, "booking should be confirmed after webhook")
+	assert.Equal(t, "paid", paymentStatus, "payment should be paid after webhook")
 
-	 assert.Equal(t, "confirmed", bookingStatus,   "booking should be confirmed after webhook")
-    assert.Equal(t, "paid",      paymentStatus,   "payment should be paid after webhook")
-
-    t.Logf("First webhook processed: status=%s payment=%s", bookingStatus, paymentStatus)
+	t.Logf("First webhook processed: status=%s payment=%s", bookingStatus, paymentStatus)
 
 	// Send the EXACT SAME webhook a second time ──────────
-    // This simulates Paystack retrying delivery (they retry on non-200 responses)
-    w2 := app.MakeRequest(
-        testhelpers.NewRequest("POST", "/api/payments/webhook", webhookPayload),
-    )
+	// This simulates Paystack retrying delivery (they retry on non-200 responses)
+	w2 := app.MakeRawRequest(
+		"POST",
+		"/api/payments/webhook",
+		webhookPayload,
+		map[string]string{"x-paystack-signature": signature},
+	)
+	assert.Equal(t, http.StatusOK, w2.Code,
+		"second webhook call should also return 200")
+	// second call should also return 200 (acknowledge it) but do nothing
+	assert.Equal(t, http.StatusOK, w2.Code,
+		"second webhook call should also return 200")
 
-    // second call should also return 200 (acknowledge it) but do nothing
-    assert.Equal(t, http.StatusOK, w2.Code,
-        "second webhook call should also return 200")
+	// CRITICAL CHECK: booking state must be unchanged after second webhook
+	// If this check fails it means your webhook is NOT idempotent
+	var statusAfterSecond, paymentAfterSecond string
+	app.DB.QueryRow(
+		"SELECT status, payment_status FROM bookings WHERE id = $1",
+		bookingID,
+	).Scan(&statusAfterSecond, &paymentAfterSecond)
 
-		// CRITICAL CHECK: booking state must be unchanged after second webhook
-    // If this check fails it means your webhook is NOT idempotent
-    var statusAfterSecond, paymentAfterSecond string
-    app.DB.QueryRow(
-        "SELECT status, payment_status FROM bookings WHERE id = $1",
-        bookingID,
-    ).Scan(&statusAfterSecond, &paymentAfterSecond)
+	assert.Equal(t, "confirmed", statusAfterSecond,
+		"booking should still be confirmed after duplicate webhook")
+	assert.Equal(t, "paid", paymentAfterSecond,
+		"payment should still be 'paid' after duplicate webhook — not changed to 'pending'")
 
-    assert.Equal(t, "confirmed", statusAfterSecond,
-        "booking should still be confirmed after duplicate webhook")
-    assert.Equal(t, "paid", paymentAfterSecond,
-        "payment should still be 'paid' after duplicate webhook — not changed to 'pending'")
+	t.Logf("Duplicate webhook correctly ignored")
 
-    t.Logf("✅ Duplicate webhook correctly ignored")
+	// ── Step 5: Check total_amount was not doubled ─────────────────
+	// A non-idempotent system might credit the amount twice
+	var totalAmount int
+	app.DB.Get(&totalAmount, "SELECT total_amount FROM bookings WHERE id = $1", bookingID)
+	assert.Equal(t, 300000, totalAmount,
+		"total_amount should still be 300000, not doubled to 600000")
 
-    // ── Step 5: Check total_amount was not doubled ─────────────────
-    // A non-idempotent system might credit the amount twice
-    var totalAmount int
-    app.DB.Get(&totalAmount, "SELECT total_amount FROM bookings WHERE id = $1", bookingID)
-    assert.Equal(t, 300000, totalAmount,
-        "total_amount should still be 300000, not doubled to 600000")
-
-    t.Logf("✅ Amount not duplicated: %d", totalAmount)
+	t.Logf("Amount not duplicated: %d", totalAmount)
 }
 
 func TestWebhookRejectsInvalidSignature(t *testing.T) {
-    // Security test — webhook with wrong signature must be rejected
-    app := testhelpers.SetUpTestApp(t)
+	// Security test — webhook with wrong signature must be rejected
+	app := testhelpers.SetUpTestApp(t)
 
-    payload := []byte(`{"event":"charge.success","data":{"reference":"fake_ref"}}`)
+	payload := []byte(`{"event":"charge.success","data":{"reference":"fake_ref"}}`)
 
-    req := testhelpers.NewRawRequest("POST", "/api/payments/webhook", payload)
-    req.Header.Set("Content-Type", "application/json")
-    req.Header.Set("x-paystack-signature", "invalid_signature_here")
+	w := app.MakeRawRequest(
+		"POST",
+		"/api/payments/webhook",
+		payload,
+		map[string]string{"x-paystack-signature": "invalid_signature_here"},
+	)
 
-    w := app.MakeRawRequest(req)
+	assert.NotEqual(t, http.StatusOK, w.Code,
+		"webhook with invalid signature should be rejected")
 
-    // must be rejected — 400 or 401
-    assert.NotEqual(t, http.StatusOK, w.Code,
-        "webhook with invalid signature should be rejected")
+	// must be rejected — 400 or 401
+	assert.NotEqual(t, http.StatusOK, w.Code,
+		"webhook with invalid signature should be rejected")
 
-    t.Logf("✅ Invalid signature correctly rejected with status %d", w.Code)
+	t.Logf("Invalid signature correctly rejected with status %d", w.Code)
 }

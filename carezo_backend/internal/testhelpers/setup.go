@@ -269,3 +269,23 @@ func (app *TestApp) LoginTestAdmin(t *testing.T) string {
 	return data["token"].(string)
 
 }
+
+
+// MakeRawRequest sends the exact raw bytes given, with no JSON marshaling.
+// Needed for webhook tests, where the signature is computed over the exact
+// byte sequence sent — json.Marshal-ing a []byte would base64-encode it and
+// silently break signature verification.
+func (app *TestApp) MakeRawRequest(method, url string, rawBody []byte, headers map[string]string) *httptest.ResponseRecorder {
+	req := httptest.NewRequest(method, url, bytes.NewBuffer(rawBody))
+	req.Header.Set("Content-Type", "application/json")
+
+	// caller-provided headers (e.g. x-paystack-signature) applied after the
+	// default so a caller could override Content-Type too if ever needed
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	w := httptest.NewRecorder()
+	app.Router.ServeHTTP(w, req)
+	return w
+}
