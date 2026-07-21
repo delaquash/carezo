@@ -26,77 +26,50 @@ func (s *CarService) CreateCar(req *models.CreateCarRequest) (*models.Car, error
 
 	query := `SELECT EXISTS(SELECT 1 FROM cars WHERE license_plate = $1 AND deleted_at IS NULL)`
 	err := database.DB.Get(&exists, query, req.LicensePlate)
+
 	if err != nil {
-		return nil, fmt.Errorf("database error: %w", err)
+		return nil, fmt.Errorf("Database error: %w", err)
 	}
 
 	if exists {
-		return nil, errors.New("car with this license plate already exists")
+		return nil, errors.New("Car with this licence plate exist already")
 	}
 
-	if req.HourlyRate.Weekday < 0 || req.HourlyRate.Weekend < 0 || req.HourlyRate.Holiday < 0 {
-		return nil, errors.New("invalid hourly rate values")
-	}
-
-	featuresJSON, err := json.Marshal(req.Features)
+	convertFeaturesToJson, err := json.Marshal(req.Features)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal features: %w", err)
+		return nil, fmt.Errorf("Failed to convert features: %w", err)
 	}
 
 	hourlyRateJSON, err := json.Marshal(req.HourlyRate)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal hourly rate: %w", err)
+		return nil, fmt.Errorf("Failed to marshal hourly rate: %w", err)
 	}
 
 	carID := uuid.New().String()
-
 	query = `
 		INSERT INTO cars (
-    		id, model, year, color, license_plate,
-    		engine_output, transmission, fuel_type,
-    		seating_capacity, maximum_speed, mileage,
-    		driver_name, driver_number, driver_miles,
-    		hourly_rate, caution_fee, features,
-    		current_location
-	)
-		VALUES (
-			$1,$2,$3,$4,$5,
-			$6,$7,$8,
-			$9,$10,$11,
-			$12,$13,$14,
-			$15,$16,$17,
-			$18
+			id, model, year, color, license_plate, engine_output, transmission, fuel_type,
+			seating_capacity, maximum_speed, mileage, driver_name, driver_number, driver_miles, hourly_rate,
+			caution_fee, features, images, is_available, status, current_location
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, '[]'::jsonb, true, 'active', $18
 		)
 		RETURNING *
-			`
+	`
 
 	var car models.Car
 
 	err = database.DB.Get(&car, query,
-		carID,
-		req.Model,
-		req.Year,
-		req.Color,
-		req.LicensePlate,
-		req.EngineOutput,
-		req.Transmission,
-		req.FuelType,
-		req.SeatingCapacity,
-		req.MaximumSpeed,
-		req.Mileage,
-		req.DriverName,
-		req.DriverNumber,
-		req.DriverMiles,
-		hourlyRateJSON,
-		req.CautionFee,
-		featuresJSON,
+		carID, req.Model, req.Year, req.Color, req.LicensePlate,
+		req.EngineOutput, req.Transmission, req.FuelType, req.SeatingCapacity,
+		req.MaximumSpeed, req.Mileage, req.DriverName, req.DriverNumber,
+		req.DriverMiles, hourlyRateJSON, req.CautionFee, convertFeaturesToJson,
 		req.CurrentLocation,
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to create car: %w", err)
+		return nil, fmt.Errorf("Failed to create car: %w", err)
 	}
-
 	return &car, nil
 }
 
@@ -411,11 +384,10 @@ func (s *CarService) SearchCars(req *models.SearchCarsRequest) (*models.CarListR
 
 // Get available cars for given date range
 func (s *CarService) GetAvailableCars(pickupDate, returnDate time.Time) ([]*models.Car, error) {
-	// query cars not booked within requested period and date range
 	query := `
 		SELECT c.* FROM cars c
 	    WHERE c.is_available = true 
-		AND c.status = 'active'	
+		AND c.status = 'active'
 		AND c.deleted_at IS NULL
 		AND c.id NOT IN (
 			SELECT car_id FROM bookings
@@ -423,8 +395,7 @@ func (s *CarService) GetAvailableCars(pickupDate, returnDate time.Time) ([]*mode
 			AND (
 				(pickup_date <= $1 AND return_date >= $1) OR
 				(pickup_date <= $2 AND return_date >= $2) OR
-				(pickup_date >= $1 AND return_date <= $1)
-
+				(pickup_date >= $1 AND return_date <= $2)
 			)
         )
 			ORDER BY created_at DESC
@@ -514,7 +485,7 @@ func (s *CarService) GetPopularCars(page, perPage int) ([]*models.Car, int, erro
 			WHERE is_available = true
 			AND deleted_at IS NULL
 	`)
-	// if sql fails 
+	// if sql fails
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count popular cars: %w", err)
 	}
