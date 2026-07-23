@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"testing"
 
-	// "uuid"
-
 	"github.com/delaquash/carezo/internal/testhelpers"
 	"github.com/delaquash/carezo/internal/utils"
 	"github.com/google/uuid"

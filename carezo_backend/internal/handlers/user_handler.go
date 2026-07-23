@@ -102,7 +102,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	if newProfileImageProvided && oldPublicID != "" {
 		go func(id string) { //background  -- dont make user wait for cloudinary
 			if err := h.cloudinaryService.DeleteImage(id); err != nil {
-				fmt.Sprintf("[Cloudinary] failed to delete old profile image  %s: %v\n", id, err)
+				fmt.Printf("[Cloudinary] failed to delete old profile image  %s: %v\n", id, err)
 			}
 
 		}(oldPublicID)
