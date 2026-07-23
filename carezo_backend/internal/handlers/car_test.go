@@ -116,12 +116,14 @@ func TestCreateCar_DuplicatedLicensePlate(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code,
 		"duplicate license plate should be rejected, got: %s", w.Body.String())
 
+}
+
 	// ── Full CRUD happy path: Get → Update → Delete ─────────────────────────
 // Chained in one test rather than three separate ones because each step
 // genuinely depends on the previous step's result (need a real car ID to
 // update, need that same ID to delete) — same reasoning as
 // TestRebookAfterCancellation being one flow instead of split tests.
-
+	
 func TestCarCRUDLifecycle(t *testing.T) {
 	app := testhelpers.SetUpTestApp(t)
 	t.Cleanup(func() { app.CleanUpDB(t) })
@@ -154,8 +156,8 @@ func TestCarCRUDLifecycle(t *testing.T) {
 
 	w = app.MakeRequest("PUT", "/api/admin/cars/"+carID, updateBody, adminToken)
 	assert.Equal(t, http.StatusOK, w.Code, "update failed: %s", w.Body.String())
-	updated := testhelpers.ParseResponse(w)["data"].map([string]interface{})
-	assert.Equal(t, float6475000), updated["caution_fee"]
+	updated := testhelpers.ParseResponse(w)["data"].(map[string]interface{})
+	assert.Equal(t, float64(75000), updated["caution_fee"])
 
 	// Field we did NOT touch should be unaffected — proves the dynamic
 	// update only applies fields explicitly present in the request body,
@@ -172,4 +174,83 @@ func TestCarCRUDLifecycle(t *testing.T) {
 	w = app.MakeRequest("GET", "/api/cars/"+carID, nil, "")
 	assert.Equal(t, http.StatusNotFound, w.Code,
 		"deleted car should return 404, got: %s", w.Body.String())
+}
+
+
+// GetAvailableCars
+func TestGetAvailableCars_ExcludesOverlappingBookings(t *testing.T){
+	app := testhelpers.SetUpTestApp(t)
+	t.Cleanup(func() { app.CleanUpDB(t) })
+
+	adminToken := loginAsTestAdmin(t, app, "car_admin_avail@carezo.com", "Test123!@#")
+	userToken := app.LoginTestUser(t, "car_avail_user@carezo.com", "Test123!@#")
+
+	// create a car 
+	w := app.MakeRequest("POST", "/api/admin/cars", validCarPayload("AVAIL-001"), adminToken)
+	require.Equal(t, http.StatusCreated, w.Code)
+	car := testhelpers.ParseResponse(w)["data"].(map[string]interface{})
+	carID := car["id"].(string)
+
+	// Book this car for a fixed window
+	bookingBody := map[string]interface{}{
+		"car_id":  carID,
+		"pickup_date":     "2026-08-10T09:00:00Z",
+		"return_date":     "2026-08-15T09:00:00Z",
+		"pickup_location": "Lagos Mainland",
+		"destination":     "Lekki Phase 1",
+	}
+
+	w = app.MakeRequest("POST", "/api/bookings", bookingBody, userToken)
+	require.Equal(t, http.StatusCreated, w.Code, "booking creation failed: %s", w.Body.String())
+
+
+	// first issue:= requested window overlaps the existing booking
+	overlapURL := "/api/cars/available?pickup_date=2026-08-12T09:00:00Z&return_date=2026-08-20T09:00:00Z"
+	w = app.MakeRequest("GET", overlapURL, nil, "")
+	assert.Equal(t, http.StatusOK, w.Code)
+	overlapResp := testhelpers.ParseResponse(w)["data"].(map[string]interface{})
+	assert.False(t, containsCarID(overlapResp["cars"], carID), 
+		"car should be excluded, requested dates  overlap an existing booking")
+
+	// second issue is when requested window is entirely inside the existing booking
+	insideURL := "/api/cars/available?pickup_date=2026-08-11T09:00:00Z&return_date=2026-08-13T09:00:00Z"
+	w = app.MakeRequest("GET", insideURL, nil, "")
+	assert.Equal(t, http.StatusOK, w.Code)
+	insideResp := testhelpers.ParseResponse(w)["data"].(map[string]interface{})
+	assert.False(t, containsCarID(insideResp["cars"], carID),
+		"car should be excluded — requested dates fall entirely inside an existing booking")
+
+
+	// third issue is that the requested window does not overlap at all
+	// Car SHOULD appear — proves the query isn't overly broad and
+	// excluding cars it shouldn't.
+	freeURL := "/api/cars/available?pickup_date=2026-09-01T09:00:00Z&return_date=2026-09-05T09:00:00Z"
+	w = app.MakeRequest("GET", freeURL, nil, "")
+	assert.Equal(t, http.StatusOK, w.Code)
+	freeResp := testhelpers.ParseResponse(w)["data"].(map[string]interface{})
+	assert.True(t, containsCarID(freeResp["car"], carID), 
+        "car should be available, requested dates dont overlap the existing booking")
+}
+
+// Small helper — the "cars" field in GetAvailableCars' response is a raw
+// []interface{} once JSON-decoded, so this just checks whether our target
+// carID shows up anywhere in that list, without needing to fully unmarshal
+// into []models.Car.
+
+func containsCarID(carsField interface{}, targetID string) bool {
+	cars, ok := carsField.([]interface{})
+	if !ok {
+		return false
+	}
+
+	for _, c := range cars {
+		carMap, ok := c.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if carMap["id"] == targetID {
+			return true
+		}
+	}
+	return false
 }
