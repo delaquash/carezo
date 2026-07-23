@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"net/http"
 	"time"
@@ -241,6 +242,10 @@ func (s *PaymentService) VerifyPayment(reference string) error {
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update booking payment status: %w", err)
+	}
+
+	if err := s.bookingService.notificationService.SendPaymentSuccessNotification(booking.UserID, booking.BookingReference, booking.TotalAmount); err != nil {
+		log.Printf("failed to send payment-success notification: %v", err)
 	}
 
 	rows, _ := result.RowsAffected()

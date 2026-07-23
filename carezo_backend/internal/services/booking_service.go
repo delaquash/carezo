@@ -258,6 +258,9 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	if err != nil {
 		return nil, fmt.Errorf("failed to create booking: %w", err)
 	}
+	if err := s.notificationService.SendBookingCreatedNotification(userID, booking.BookingReference, booking.TotalAmount); err != nil {
+		log.Printf("failed to send booking-created notification: %v", err) // don't return err — booking already succeeded
+	}
 
 	// commit, nothing is written to the db until commit()
 	// if Commit() fails, defer Rollback() above cleans everything up
@@ -463,7 +466,9 @@ func (s *BookingService) CancelBooking(bookingID string, userID string, reason s
 	if err != nil {
 		return fmt.Errorf("failed to cancel booking: %w", err)
 	}
-
+	if err := s.notificationService.SendBookingCancelledNotification(userID, booking.BookingReference, reason); err != nil {
+		log.Printf("failed to send cancellation notification: %v", err)
+	}
 	rows, _ := result.RowsAffected()
 
 	if rows == 0 {

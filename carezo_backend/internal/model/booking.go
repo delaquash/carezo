@@ -33,9 +33,10 @@ type Booking struct {
 	ReturnDate       time.Time  `json:"return_date" db:"return_date"`
 	ActualReturnDate *time.Time `json:"actual_return_date,omitempty" db:"actual_return_date"`
 
-	Destination string `json:"destination" db:"destination"`
-
-	PickUpLocation *string `json:"pickup_location" db:"pickup_location"`
+	Destination    string     `json:"destination" db:"destination"`
+	PickedUpAt     *time.Time `json:"picked_up_at,omitempty" db:"picked_up_at"`
+	DroppedOffAt   *time.Time `json:"dropped_off_at,omitempty" db:"dropped_off_at"`
+	PickUpLocation *string    `json:"pickup_location" db:"pickup_location"`
 
 	// HourlyRate    float64 `json:"hourly_rate" db:"hourly_rate"`
 	CautionFee  float64 `json:"caution_fee" db:"caution_fee"`
@@ -55,8 +56,8 @@ type Booking struct {
 	SpecialRequests    *string `json:"special_requests,omitempty" db:"special_requests"`
 
 	// Timestamps
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	CreatedAt time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
 	DeletedAt *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
 }
 

@@ -9,7 +9,6 @@ import (
 	models "github.com/delaquash/carezo/internal/model"
 )
 
-
 type NotificationService struct{}
 
 func NewNotification() *NotificationService {
@@ -34,7 +33,7 @@ func (s *NotificationService) CreateNotification(req *models.CreateNotificationR
 	_, err = database.DB.Exec(query,
 		req.UserID,
 		req.Title,
-		req.Message, 
+		req.Message,
 		req.Type,
 		dataJSON,
 	)
@@ -42,11 +41,10 @@ func (s *NotificationService) CreateNotification(req *models.CreateNotificationR
 	if err != nil {
 		return fmt.Errorf("failed to create notification: %w", err)
 	}
-	return  nil
+	return nil
 }
 
-
-func (s *NotificationService) GetUserNotification(userID string)([]models.Notification, error) {
+func (s *NotificationService) GetUserNotification(userID string) ([]models.Notification, error) {
 	var notifications []models.Notification
 
 	query := `
@@ -64,8 +62,47 @@ func (s *NotificationService) GetUserNotification(userID string)([]models.Notifi
 	return notifications, nil
 }
 
+func (s *NotificationService) SendBookingCreatedNotification(userID, bookingReference string, totalAmount float64) error {
+	return s.CreateNotification(&models.CreateNotificationRequest{
+		UserID:  userID,
+		Title:   "Booking Confirmed",
+		Message: fmt.Sprintf("Your booking %s has been created successfully.", bookingReference),
+		Type:    models.NotificationTypeBookingCreated,
+		Data: map[string]interface{}{
+			"booking_reference": bookingReference,
+			"total_amount":      totalAmount,
+		},
+	})
+}
+
+func (s *NotificationService) SendPaymentSuccessNotification(userID, bookingReference string, amountPaid float64) error {
+	return s.CreateNotification(&models.CreateNotificationRequest{
+		UserID:  userID,
+		Title:   "Payment Confirmed",
+		Message: fmt.Sprintf("We've received your payment of ₦%.2f for booking %s.", amountPaid, bookingReference),
+		Type:    models.NotificationTypeBookingCreated,
+		Data: map[string]interface{}{
+			"booking_reference": bookingReference,
+			"amount_paid":       amountPaid,
+		},
+	})
+}
+
+func (s *NotificationService) SendBookingCancelledNotification(userID, bookingReference, reason string) error {
+	return s.CreateNotification(&models.CreateNotificationRequest{
+		UserID:  userID,
+		Title:   "Booking Cancelled",
+		Message: fmt.Sprintf("Your booking %s has been cancelled.", bookingReference),
+		Type:    models.NotificationTypeBookingCancelled,
+		Data: map[string]interface{}{
+			"booking_reference": bookingReference,
+			"reason":            reason,
+		},
+	})
+}
+
 // to get the number of unread messages
-func (s *NotificationService) GetUnreadCount(userID string)(int, error) {
+func (s *NotificationService) GetUnreadCount(userID string) (int, error) {
 	var count int
 	query := `
 		SELECT COUNT(*) FROM notifications
@@ -104,7 +141,7 @@ func (s *NotificationService) MarkOneread(notificationID, userID string) error {
 	`
 	_, err := database.DB.Exec(query, notificationID, userID)
 	if err != nil {
-		return  fmt.Errorf("Failed to mark notification as read: %w", err)
+		return fmt.Errorf("Failed to mark notification as read: %w", err)
 	}
 
 	return nil
@@ -116,7 +153,7 @@ func (s *EmailService) SendBookingConfirmationEmail(
 	totalAmount float64,
 ) error {
 	subject := "Booking Confirmed — " + bookingReference
- 
+
 	body := fmt.Sprintf(`
 		<html>
 		<body style="font-family: sans-serif; color: #111;">
@@ -151,7 +188,7 @@ func (s *EmailService) SendBookingConfirmationEmail(
 		returnDate.Format("Mon, 02 Jan 2006 15:04"),
 		totalAmount,
 	)
- 
+
 	return s.sendEmail(to, subject, body)
 }
 func (s *NotificationService) DeleteNotification(notificationID, userID string) error {
