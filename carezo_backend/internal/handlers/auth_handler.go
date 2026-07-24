@@ -132,3 +132,18 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "Password reset successful. You can now login with your new password.", nil)
 }
+
+func (h *AuthHandler) GoogleSignIn(c *gin.Context) {
+	var req models.GoogleSignInRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		return
+	}
+
+	authResponse, err := h.authService.GoogleSignIn(&req)
+	if err != nil {
+		response.Error(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+		response.Success(c, http.StatusOK, "Google sign-in successful", authResponse)
+}

@@ -209,6 +209,14 @@ func main() {
 				users.GET("/:id", userHandler.GetUserByID)
 				users.PUT("/:id/status", userHandler.UpdateUserStatus)
 			}
+
+			// bookings
+			bookings := admin.Group("/bookings")
+			{
+				bookings.POST("/:id/pickup", bookingHandler.MarkPickedUp)
+				bookings.POST("/:id/dropoff", bookingHandler.MarkDroppedOff)
+				bookings.POST("/:id/return", bookingHandler.MarkReturned)
+			}
 		}
 
 	}

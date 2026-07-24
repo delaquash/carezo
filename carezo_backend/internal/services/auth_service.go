@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	models "github.com/delaquash/carezo/internal/model"
 	"github.com/delaquash/carezo/internal/utils"
 	"github.com/google/uuid"
+	"google.golang.org/api/idtoken"
 )
 
 type AuthService struct {
@@ -337,4 +339,70 @@ func (s *AuthService) ResetPassword(req *models.ResetPasswordRequest) error {
 	}
 
 	return nil
+}
+
+
+func (s *AuthService) GoogleSignIn(req *models.GoogleSignInRequest)(*models.AuthResponse, error){
+	ctx := context.Background()
+
+	payload, err  := idtoken.Validate(ctx, req.IDToken, s.cfg.GoogleClientID)
+	if err != nil {
+		return nil, fmt.Errorf("ivalid google token: %w", err)
+	}
+
+	email, _ := payload.Claims["email"].(string)
+	emailVerified, _ := payload.Claims["email_verified"].(bool)
+	firstName, _ := payload.Claims["given_name"].(string)
+	lastName, _ := payload.Claims["family_name"].(string)
+
+	if email == "" || !emailVerified {
+		return nil, errors.New("google account email not verified")
+	}
+
+	var user models.User
+	err = database.DB.Get(&user, `SELECT * FROM users WHERE email = $1`, email)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// First time signing in with this Google account — create
+			// the user. email_verified = true immediately, since Google
+			// already verified it — no OTP step needed for this path,
+			// unlike your normal Register flow.
+			userID := uuid.New().String()
+			err = database.DB.Get(&user, `
+				INSERT INTO users (id, email, password_hash, first_name, last_name,
+				role, status, email_verified)
+				VALUES  ($1, $2, $3, $4, 'user', 'active', true)
+				RETURNING * 
+			`, userID, email, firstName, lastName)
+
+			// password_hash is empty string — this user has no password
+			// at all, since they only ever authenticate via Google.
+
+			if err != nil {
+				return nil, fmt.Errorf("failed to create user from google sign-in: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("database error: %w", err)
+		}
+	}
+
+
+	// From here, identical to your existing Login/VerifyOTP — issue YOUR
+	// OWN JWT, using your own GenerateAccessToken.
+
+	accessToken, err := utils.GenerateAccessToken(user.ID, user.Email, user.Role, s.cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate access token: %w", err)
+	}
+	refreshToken, err := utils.GenerateRefreshToken(user.ID, s.cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
+	}
+
+	return &models.AuthResponse{
+		AccessToken: accessToken,
+		RefreshToken: refreshToken,
+		User: &user,
+	}, nil
 }

@@ -98,3 +98,8 @@ type AuthResponse struct {
 	RefreshToken string `json:"refresh_token"`
 	User         *User  `json:"user"`
 }
+
+// models — new request type
+type GoogleSignInRequest struct {
+	IDToken string `json:"id_token" binding:"required"`
+}
