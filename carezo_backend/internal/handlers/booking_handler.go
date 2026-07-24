@@ -84,6 +84,36 @@ func (h *BookingHandler) UpdateBooking(c *gin.Context) {
 	response.Success(c, http.StatusOK, "booking updated successfully", booking)
 }
 
+func (h *BookingHandler) MarkPickedUp(c *gin.Context) {
+	bookingID := c.Param("id")
+	booking, err := h.bookingService.MarkPickedUp(bookingID)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	response.Success(c, http.StatusOK, "Booking marked as picked up", booking)
+}
+
+
+func (h *BookingHandler) MarkDroppedOff(c *gin.Context) {
+	bookingID := c.Param("id")
+	booking, err := h.bookingService.MarkDroppedOff(bookingID)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+		response.Success(c, http.StatusOK, "Booking marked as dropped off", booking)
+}
+
+func (h *BookingHandler) MarkReturned(c *gin.Context) {
+	bookingID := c.Param("id")
+	booking, err := h.bookingService.MarkReturned(bookingID)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	response.Success(c, http.StatusOK, "Booking marked as returned", booking)
+}
 // GET /api/bookings
 //    ?status=pending&page=1&limit=10
 
