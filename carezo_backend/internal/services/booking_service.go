@@ -518,3 +518,90 @@ func (s *BookingService) GetBookingByPaymentReference(reference string) (*models
 	}
 	return &booking, nil
 }
+
+// MarkReturned records that the VEHICLE has come back to Carezo — the
+// final milestone.
+func (s *BookingService) MarkReturned(bookingID string) (*models.Booking, error) {
+	var booking models.Booking
+
+	// Reuses your EXISTING actual_return_date column (already on
+	// models.Booking, alongside ReturnDate/ActualReturnDate) rather than
+	// inventing a new field — actual_return_date already means exactly
+	// "when the car really came back," which is precisely this event.
+
+	err := database.DB.Get(&booking, `
+		UPDATE bookings 
+		SET status = 'completed', actual_return_date = $1
+		WHERE id = $2 AND status = 'in_progress'
+		RETURNING *
+	`, time.Now(), bookingID)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("booking not found or not in progress")
+		}
+		return nil, fmt.Errorf("database error: %w", err)
+	}
+
+	if err := s.notificationService.SendReturnedNotification(booking.UserID.String(), booking.BookingReference); err != nil {
+		log.Printf("failed to send return notification: %v", err)
+	}
+	return &booking, nil
+}
+
+// MarkPickedUp records that the driver has picked up the customer.
+// Called by an admin
+func (s *BookingService) MarkPickedUp(bookingID string) (*models.Booking, error) {
+	var booking models.Booking
+
+	// WHERE status = 'confirmed' is the important guard here: it only allows
+	// this transition from a CONFIRMED booking. This stops someone from
+	// accidentally marking a PENDING (unpaid) or already-CANCELLED booking
+	// as picked up
+	err := database.DB.Get(&booking, `
+		UPDATE bookings
+		SET status  = 'in_progress', picked_up_at = $1
+		WHERE id = $2 AND status = 'confirmed'
+		RETURNING *
+	`, time.Now(), bookingID)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("booking not found or not in a confirmed state")
+		}
+		return nil, fmt.Errorf("database error: %w", err)
+	}
+	// Fire the in-app notification. booking.UserID.String() converts the
+	// uuid.UUID struct field into the plain string SendPickupNotification
+	// expects
+	if err := s.notificationService.SendPickUpNotification(booking.UserID.String(), booking.BookingReference); err != nil {
+		log.Printf("failed to send pickup notification: %v", err)
+	}
+	return &booking, nil
+}
+
+func (s *BookingService) MarkDroppedOff(bookingID string) (*models.Booking, error) {
+	var booking models.Booking
+
+	// Guard is "status = 'in_progress'" here, not 'confirmed' — dropoff can
+	// only happen AFTER pickup already occurred. This enforces the correct
+	// ordering: you can't be dropped off before you were ever picked up.
+	err := database.DB.Get(&booking, `
+		UPDATE bookings
+		SET dropped_off_at = $1
+		WHERE id = $2 AND status = 'in_progress'
+		RETURNING *
+	`, time.Now(), bookingID)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("booking not found or not in progress")
+		}
+		return nil, fmt.Errorf("database error: %w", err)
+	}
+	if err := s.notificationService.SendDropoffNotification(booking.UserID.String(), booking.BookingReference); err != nil {
+		log.Printf("failed to send dropoff notification: %v", err)
+	}
+
+	return &booking, nil
+}
