@@ -244,7 +244,7 @@ func (s *PaymentService) VerifyPayment(reference string) error {
 		return fmt.Errorf("failed to update booking payment status: %w", err)
 	}
 
-	if err := s.bookingService.notificationService.SendPaymentSuccessNotification(booking.UserID, booking.BookingReference, booking.TotalAmount); err != nil {
+	if err := s.bookingService.notificationService.SendPaymentSuccessNotification(booking.UserID.String(), booking.BookingReference, booking.TotalAmount); err != nil {
 		log.Printf("failed to send payment-success notification: %v", err)
 	}
 
