@@ -88,6 +88,42 @@ func (s *NotificationService) SendPaymentSuccessNotification(userID, bookingRefe
 	})
 }
 
+func (s *NotificationService) SendPickUpNotification(userID, bookingReference string) error {
+	return s.CreateNotification(&models.CreateNotificationRequest{
+		UserID:  userID,
+		Title:   "Driver has picked you up",
+		Message: fmt.Sprintf("Your trip for booking %s has started.", bookingReference),
+		Type:    models.NotificationtypePickup,
+		Data: map[string]interface{}{
+			"booking_reference": bookingReference,
+		},
+	})
+}
+
+func (s *NotificationService) SendDropoffNotification(userID, bookingReference string) error {
+	return s.CreateNotification(&models.CreateNotificationRequest{
+		UserID:  userID,
+		Title:   "You've arrived",
+		Message: fmt.Sprintf("Your trip for booking %s is complete. Thanks for riding with Carezo.", bookingReference),
+		Type:    models.NotificationTypeDropoff,
+		Data: map[string]interface{}{
+			"booking_reference": bookingReference,
+		},
+	})
+}
+
+func (s *NotificationService) SendReturnedNotification(userID, bookingReference string) error {
+	return s.CreateNotification(&models.CreateNotificationRequest{
+		UserID:  userID,
+		Title:   "Vehicle returned",
+		Message: fmt.Sprintf("Booking %s has been completed. We hope you enjoyed your ride!", bookingReference),
+		Type:    models.NotificationTypeReturned,
+		Data: map[string]interface{}{
+			"booking_reference": bookingReference,
+		},
+	})
+}
+
 func (s *NotificationService) SendBookingCancelledNotification(userID, bookingReference, reason string) error {
 	return s.CreateNotification(&models.CreateNotificationRequest{
 		UserID:  userID,
