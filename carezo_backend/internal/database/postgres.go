@@ -12,11 +12,15 @@ import (
 var DB *sqlx.DB
 
 func ConnectPostgres(cfg *configs.Config) (*sqlx.DB, error) {
-	// Build connection string (DSN - Data Source Name)
-	// Format: postgres://username:password@host:port/database?options
+
+	sslMode := "disable"
+	if cfg.AppEnv == "production" {
+		sslMode = "require"
+	}
+	
 	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName,
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable sslmode=%s",
+		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName, sslMode,
 	)
 
 	// Open connection to database and sqlx.Connect also pings the db to verif
