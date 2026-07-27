@@ -4,35 +4,59 @@ import (
 	"time"
 )
 
+const (
+	DriverVerificationPendingDocuments = "pending_documents"
+	DriverVerificationPendingReview    = "pending_review"
+	DriverVerificationApproved         = "approved"
+	DriverVerificationRejected         = "rejected"
+)
 type Driver struct {
-	ID                   string     `db:"id"                    json:"id"`
-	FirstName            string     `db:"first_name"            json:"first_name"`
-	LastName             string     `db:"last_name"             json:"last_name"`
-	Age                  int        `db:"age"                   json:"age"`
-	Gender               string     `db:"gender"                json:"gender"`
-	State                string     `db:"state"                 json:"state"`
-	Religion             *string    `db:"religion"              json:"religion,omitempty"`
-	Complexion           *string    `db:"complexion"            json:"complexion,omitempty"`
-	Nationality          *string    `db:"nationality"           json:"nationality,omitempty"` // ← was string, NULL breaks scan
-	Height               int        `db:"height"                json:"height"`
-	PhoneNumber          string     `db:"phone_number"          json:"phone_number"`
-	TotalTrips           *int       `db:"total_trips" json:"total_trips,omitempty"`
-	Email                string     `db:"email"                 json:"email"`
-	LicenseNumber        string     `db:"license_number"        json:"license_number"`
-	LicenseExpiryDate    time.Time  `db:"license_expiry_date"   json:"license_expiry_date"`
-	YearsOfExperience    int        `db:"years_of_experience"   json:"years_of_experience"`
-	Bio                  *string    `db:"bio"                   json:"bio,omitempty"`
-	Languages            JSONB      `db:"languages"             json:"languages"`
-	IsAvailable          bool       `db:"is_available"          json:"is_available"`
-	Status               string     `db:"status"                json:"status"`
-	AverageRating        *float64   `db:"average_rating"        json:"average_rating,omitempty"`
-	TotalReviews         *int       `db:"total_reviews"         json:"total_reviews,omitempty"`
-	ProfileImageURL      *string    `db:"profile_image_url"     json:"profile_image_url,omitempty"`
-	ProfileImagePublicID *string    `db:"profile_image_public_id" json:"profile_image_public_id,omitempty"`
-	CreatedAt            time.Time  `db:"created_at"            json:"created_at"`
-	UpdatedAt            time.Time  `db:"updated_at"            json:"updated_at"`
-	DeletedAt            *time.Time `db:"deleted_at"            json:"deleted_at,omitempty"`
+	ID string `json:"id" db:"id"`
+
+	UserID *string `json:"user_id,omitempty" db:"user_id"`
+
+	FirstName string `json:"first_name" db:"first_name"`
+	LastName  string `json:"last_name" db:"last_name"`
+	Age       int    `json:"age" db:"age"`
+	Gender    string `json:"gender" db:"gender"`
+	State     string `json:"state" db:"state"`
+	Religion  string `json:"religion" db:"religion"`
+	Complexion string `json:"complexion" db:"complexion"`
+	Height    int    `json:"height" db:"height"`
+
+	PhoneNumber string `json:"phone_number" db:"phone_number"`
+	Email       string `json:"email" db:"email"`
+
+	LicenseNumber     string    `json:"license_number" db:"license_number"`
+	LicenseExpiryDate time.Time `json:"license_expiry_date" db:"license_expiry_date"`
+
+
+	NIN                 *string `json:"nin,omitempty" db:"nin"`
+	NINDocumentURL      *string `json:"nin_document_url,omitempty" db:"nin_document_url"`
+	LicenseDocumentURL  *string `json:"license_document_url,omitempty" db:"license_document_url"`
+
+	YearsOfExperience int      `json:"years_of_experience" db:"years_of_experience"`
+	Bio               *string  `json:"bio,omitempty" db:"bio"`
+	Languages         JSONB    `json:"languages" db:"languages"`
+
+	IsAvailable   bool   `json:"is_available" db:"is_available"`
+	Status        string `json:"status" db:"status"` 
+
+	VerificationStatus string     `json:"verification_status" db:"verification_status"`
+	RejectionReason    *string    `json:"rejection_reason,omitempty" db:"rejection_reason"`
+	ReviewedBy         *string    `json:"reviewed_by,omitempty" db:"reviewed_by"`
+	ReviewedAt         *time.Time `json:"reviewed_at,omitempty" db:"reviewed_at"`
+
+	BankAccountName   *string `json:"bank_account_name,omitempty" db:"bank_account_name"`
+	BankAccountNumber *string `json:"bank_account_number,omitempty" db:"bank_account_number"`
+	BankName          *string `json:"bank_name,omitempty" db:"bank_name"`
+
+	CreatedAt time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
+	DeletedAt *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
 }
+
+
 
 // CreateDriverRequest - for admin
 type CreateDriverRequest struct {
