@@ -6,16 +6,17 @@ ALTER TABLE users ADD CONSTRAINT users_role_check
 ALTER TABLE drivers ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id);
 ALTER TABLE drivers ADD CONSTRAINT drivers_user_id_unique UNIQUE (user_id)
 
-ALTER TABLE drivers ADD COLUMN IF NOT EXISTS verification_status VARCHAR(30)
-    NOT NULL DEFAULT 'pending_documents'
+ALTER TABLE drivers DROP CONSTRAINT IF EXISTS drivers_verification_status_check;
 ALTER TABLE drivers ADD CONSTRAINT drivers_verification_status_check
     CHECK (verification_status IN (
+        'pending_profile',
         'pending_documents',
         'pending_review',
         'approved',
         'rejected'
     ));
 
+ALTER TABLE drivers ALTER COLUMN verification_status SET DEFAULT 'pending_profile';
 
 -- The NIN itself (a number the driver types in) is distinct from the
 -- uploaded document image proving it 

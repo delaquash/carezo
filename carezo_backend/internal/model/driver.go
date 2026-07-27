@@ -5,6 +5,7 @@ import (
 )
 
 const (
+	DriverVerificationPendingProfile   = "pending_profile"  
 	DriverVerificationPendingDocuments = "pending_documents"
 	DriverVerificationPendingReview    = "pending_review"
 	DriverVerificationApproved         = "approved"
@@ -62,24 +63,26 @@ type Driver struct {
 type CreateDriverRequest struct {
 	FirstName            string   `json:"first_name" binding:"required"`
 	LastName             string   `json:"last_name" binding:"required"`
-	Age                  int      `json:"age" binding:"required,min=21,max=70"`
 	Gender               string   `json:"gender" binding:"required,oneof=male female"`
-	State                string   `json:"state" binding:"required"`
-	Nationality          string   `db:"nationality" json:"nationality"`
-	Religion             *string  `json:"religion,omitempty"`
-	Complexion           string   `json:"complexion" binding:"required"`
-	Height               int      `json:"height" binding:"required,min=140,max=220"` // cm
 	PhoneNumber          string   `json:"phone_number" binding:"required"`
-	Email                *string  `json:"email,omitempty"`
-	LicenseNumber        string   `json:"license_number" binding:"required"`
-	LicenseExpiryDate    string   `json:"license_expiry_date" binding:"required"` // ISO 8601 format
-	YearsOfExperience    int      `json:"years_of_experience" binding:"required,min=0"`
-	Bio                  *string  `json:"bio,omitempty"`
-	Languages            []string `json:"languages,omitempty"`
-	ProfileImageURL      *string  `json:"profile_image_url,omitempty"`
-	ProfileImagePublicID *string  `json:"profile_image_public_id,omitempty"`
+	Email                *string  `json:"email,omitempty"`	
 }
 
+
+type CompleteDriverProfileRequest struct {
+	Age               int      `json:"age" binding:"required,min=21,max=70"`
+	Gender            string   `json:"gender" binding:"required,oneof=male female"`
+	State             string   `json:"state" binding:"required"`
+	Nationality       string   `json:"nationality" binding:"required"`
+	Religion          *string  `json:"religion,omitempty"`
+	Complexion        string   `json:"complexion" binding:"required"`
+	Height            int      `json:"height" binding:"required,min=140,max=220"`
+	LicenseNumber     string   `json:"license_number" binding:"required"`
+	LicenseExpiryDate string   `json:"license_expiry_date" binding:"required"` // ISO 8601, matches CreateDriverRequest's existing convention
+	YearsOfExperience int      `json:"years_of_experience" binding:"required,min=0"`
+	Bio               *string  `json:"bio,omitempty"`
+	Languages         []string `json:"languages,omitempty"`
+}
 // UpdateDriverRequest - admin updates driver details
 type UpdateDriverRequest struct {
 	FirstName               *string  `json:"first_name,omitempty"`
