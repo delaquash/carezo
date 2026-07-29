@@ -5,23 +5,33 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
+	"github.com/delaquash/carezo/configs"
 	"github.com/delaquash/carezo/internal/database"
 	models "github.com/delaquash/carezo/internal/model"
 	"github.com/delaquash/carezo/internal/utils"
 	"github.com/google/uuid"
 )
 
-type DriverService struct{}
+type DriverService struct {
+	cfg          *configs.Config
+	otpService   *OTPService
+	emailService *EmailService
+}
 
-func NewDriverService() *DriverService {
-	return &DriverService{}
+func NewDriverService(cfg *configs.Config) *DriverService {
+	return &DriverService{
+		cfg:          cfg,
+		otpService:   NewOTPService(cfg),
+		emailService: NewEmailService(cfg),
+	}
 }
 
 // to create driver
-func(s *DriverService) RegisterDriver(req *models.DriverRegisterRequest) error {
+func (s *DriverService) RegisterDriver(req *models.DriverRegisterRequest) error {
 	// treat these operations as one unit. Either all of them happen, or none of them happen.
 	// if it doesnt happen then rollback
 	tx, err := database.DB.Beginx()
@@ -49,6 +59,95 @@ func(s *DriverService) RegisterDriver(req *models.DriverRegisterRequest) error {
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
+
+	//  the LOGIN account. role='driver' is the single value that
+	// makes RequireRole("driver") meaningful downstream — everything else
+	// about this row is mechanically identical to a customer registering.
+	userID := uuid.New().String()
+	_, err = tx.Exec(`
+		INSERT INTO users (id, email, password_hash, first_name, last_name, role, status, email_verified)
+		VALUES ($1, $2, $3, $4, $5, 'driver', 'active', false)
+	`, userID, req.Email, hashedPassword, req.FirstName, req.LastName)
+	if err != nil {
+		return fmt.Errorf("failed to create driver account: %w", err)
+	}
+
+	driverID := uuid.New().String()
+	_, err = tx.Exec(`
+		INSERT INTO drivers (id, user_id, first_name, last_name, phone_number, email, verification_status, is_available)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, false)
+	`, driverID, userID, req.FirstName, req.LastName, req.PhoneNumber, req.Email, models.DriverVerificationPendingProfile)
+	if err != nil {
+		return fmt.Errorf("failed to create driver profile: %w", err)
+	}
+
+	otp, err := s.otpService.GenerateAndStoreOTP(req.Email)
+	if err != nil {
+		return fmt.Errorf("failed to generate otp: %w", err)
+	}
+
+	// Commit BEFORE sending the email. The database write is the part
+	// that must be correct and durable; sending an email is an external
+	// side effect we can't roll back anyway. If Commit succeeds but the
+	// email below fails, the account still exists correctly, and the
+	// driver can recover via the EXISTING /api/auth/resend-otp endpoint —
+	// no new recovery path needed.
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit driver registration: %w", err)
+	}
+
+	if err := s.emailService.SendOTPEmail(req.Email, otp); err != nil {
+		log.Printf("failed to send registration OTP email to driver %s: %v", req.Email, err)
+	}
+
+	return nil
+
+}
+
+func (s *DriverService) CompleteDriverProfile(driverID string, req *models.CompleteDriverProfileRequest) (*models.Driver, error) {
+	driver, err := s.GetDriverByID(driverID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if driver.VerificationStatus != models.DriverVerificationPendingProfile {
+		return nil, fmt.Errorf("profile already completed or not eligible for this step (current status: %s)", driver.VerificationStatus)
+	}
+
+	expiryDate, err := time.Parse("2006-01-02", req.LicenseExpiryDate)
+	if err != nil {
+		return nil, errors.New("invalid license_expiry_date format, use YYYY-MM-DD")
+	}
+
+	if expiryDate.Before(time.Now()) {
+		return nil, errors.New("driver license has expired")
+	}
+	languagesJSON, err := json.Marshal(req.Languages)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal languages: %w", err)
+	}
+	query = ` UPDATE drivers SET age=$1, gender=$2, state=$3, nationality=$4, religion=$5, 
+		complexion=$6, height=$7, license_number=$8, license_expiry_date=$9, years_of_experience=$10, 
+		bio=$11, language=$12, languages=$12, verification_status=$13, updated_at= CURRENT_TIMESTAMP,
+		WHERE id=$14 AND verification_status=$15 RETURNING *`,
+		req.Age, req.Gender, req.State, req.Nationality, req.Religion,
+		req.Complexion, req.Height, req.LicenseNumber, expiryDate,
+		req.YearsOfExperience, req.Bio, languagesJSON,
+		models.DriverVerificationPendingDocuments,
+		driverID, models.DriverVerificationPendingProfile
+
+	var updated models.Driver
+	err = database.DB.Get(&updated, query)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("profile could not be completed — status changed concurrently")
+		}
+		return nil, fmt.Errorf("failed to complete driver profile: %w", err)
+	}
+
+	return &updated, nil
 }
 
 // get single driver details by ID

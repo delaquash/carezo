@@ -298,7 +298,7 @@ func (s *AuthService) ForgotPassword(req *models.ForgotPasswordRequest) error {
 
 // ResetPassword resets user password using otp
 func (s *AuthService) ResetPassword(req *models.ResetPasswordRequest) error {
-	// Validate password
+	// ValidatGenerateAndStoreOTP(e password
 	if req.NewPassword != req.ConfirmPassword {
 		return errors.New("Passwords do not match")
 	}
