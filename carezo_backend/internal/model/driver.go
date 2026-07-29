@@ -5,25 +5,26 @@ import (
 )
 
 const (
-	DriverVerificationPendingProfile   = "pending_profile"  
+	DriverVerificationPendingProfile   = "pending_profile"
 	DriverVerificationPendingDocuments = "pending_documents"
 	DriverVerificationPendingReview    = "pending_review"
 	DriverVerificationApproved         = "approved"
 	DriverVerificationRejected         = "rejected"
 )
+
 type Driver struct {
 	ID string `json:"id" db:"id"`
 
 	UserID *string `json:"user_id,omitempty" db:"user_id"`
 
-	FirstName string `json:"first_name" db:"first_name"`
-	LastName  string `json:"last_name" db:"last_name"`
-	Age       int    `json:"age" db:"age"`
-	Gender    string `json:"gender" db:"gender"`
-	State     string `json:"state" db:"state"`
-	Religion  string `json:"religion" db:"religion"`
+	FirstName  string `json:"first_name" db:"first_name"`
+	LastName   string `json:"last_name" db:"last_name"`
+	Age        int    `json:"age" db:"age"`
+	Gender     string `json:"gender" db:"gender"`
+	State      string `json:"state" db:"state"`
+	Religion   string `json:"religion" db:"religion"`
 	Complexion string `json:"complexion" db:"complexion"`
-	Height    int    `json:"height" db:"height"`
+	Height     int    `json:"height" db:"height"`
 
 	PhoneNumber string `json:"phone_number" db:"phone_number"`
 	Email       string `json:"email" db:"email"`
@@ -31,17 +32,16 @@ type Driver struct {
 	LicenseNumber     string    `json:"license_number" db:"license_number"`
 	LicenseExpiryDate time.Time `json:"license_expiry_date" db:"license_expiry_date"`
 
+	NIN                *string `json:"nin,omitempty" db:"nin"`
+	NINDocumentURL     *string `json:"nin_document_url,omitempty" db:"nin_document_url"`
+	LicenseDocumentURL *string `json:"license_document_url,omitempty" db:"license_document_url"`
 
-	NIN                 *string `json:"nin,omitempty" db:"nin"`
-	NINDocumentURL      *string `json:"nin_document_url,omitempty" db:"nin_document_url"`
-	LicenseDocumentURL  *string `json:"license_document_url,omitempty" db:"license_document_url"`
+	YearsOfExperience int     `json:"years_of_experience" db:"years_of_experience"`
+	Bio               *string `json:"bio,omitempty" db:"bio"`
+	Languages         JSONB   `json:"languages" db:"languages"`
 
-	YearsOfExperience int      `json:"years_of_experience" db:"years_of_experience"`
-	Bio               *string  `json:"bio,omitempty" db:"bio"`
-	Languages         JSONB    `json:"languages" db:"languages"`
-
-	IsAvailable   bool   `json:"is_available" db:"is_available"`
-	Status        string `json:"status" db:"status"` 
+	IsAvailable bool   `json:"is_available" db:"is_available"`
+	Status      string `json:"status" db:"status"`
 
 	VerificationStatus string     `json:"verification_status" db:"verification_status"`
 	RejectionReason    *string    `json:"rejection_reason,omitempty" db:"rejection_reason"`
@@ -57,17 +57,14 @@ type Driver struct {
 	DeletedAt *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
 }
 
-
-
 // CreateDriverRequest - for admin
-type CreateDriverRequest struct {
-	FirstName            string   `json:"first_name" binding:"required"`
-	LastName             string   `json:"last_name" binding:"required"`
-	Gender               string   `json:"gender" binding:"required,oneof=male female"`
-	PhoneNumber          string   `json:"phone_number" binding:"required"`
-	Email                *string  `json:"email,omitempty"`	
+type DriverRegisterRequest struct {
+	FirstName   string  `json:"first_name" binding:"required"`
+	LastName    string  `json:"last_name" binding:"required"`
+	Gender      string  `json:"gender" binding:"required,oneof=male female"`
+	PhoneNumber string  `json:"phone_number" binding:"required"`
+	Email       *string `json:"email,omitempty"`
 }
-
 
 type CompleteDriverProfileRequest struct {
 	Age               int      `json:"age" binding:"required,min=21,max=70"`
@@ -83,6 +80,7 @@ type CompleteDriverProfileRequest struct {
 	Bio               *string  `json:"bio,omitempty"`
 	Languages         []string `json:"languages,omitempty"`
 }
+
 // UpdateDriverRequest - admin updates driver details
 type UpdateDriverRequest struct {
 	FirstName               *string  `json:"first_name,omitempty"`
@@ -137,4 +135,19 @@ type DriverListResponse struct {
 	Drivers    []*Driver              `json:"drivers"`
 	Pagination PaginationMeta         `json:"pagination"`
 	Filters    map[string]interface{} `json:"filters_applied"`
+}
+
+type DriverBankDetailsRequest struct {
+	BankAccountName   string `json:"bank_account_name" binding:"required"`
+	BankAccountNumber string `json:"bank_account_number" binding:"required,len=10"`
+	BankName          string `json:"bank_name" binding:"required"`
+}
+
+type DriverReviewRequest struct {
+	Approved        bool   `json:"approved"`
+	RejectionReason string `json:"rejection_reason,omitempty"`
+}
+
+type DriverDocumentUploadRequest struct {
+	NIN string `form:"nin" binding:"required,len=11"` // Nigerian NIN is 11 digits
 }

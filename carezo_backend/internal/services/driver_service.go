@@ -10,6 +10,7 @@ import (
 
 	"github.com/delaquash/carezo/internal/database"
 	models "github.com/delaquash/carezo/internal/model"
+	"github.com/delaquash/carezo/internal/utils"
 	"github.com/google/uuid"
 )
 
@@ -19,65 +20,35 @@ func NewDriverService() *DriverService {
 	return &DriverService{}
 }
 
-// Admin to create driver
-func (s *DriverService) CreateDriver(req *models.CreateDriverRequest) (*models.Driver, error) {
-	// licenseNumber := strings.TrimSpace(req.LicenseNumber)
-	// check if vehicle exist using license number and has not been soft-deleted (deleted_at IS NULL)
-	var exists bool
-	query := `SELECT EXISTS(SELECT 1 FROM drivers WHERE license_number = $1 AND deleted_at is NULL)`
+// to create driver
+func(s *DriverService) RegisterDriver(req *models.DriverRegisterRequest) error {
+	// treat these operations as one unit. Either all of them happen, or none of them happen.
+	// if it doesnt happen then rollback
+	tx, err := database.DB.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
 
-	err := database.DB.Get(&exists, query, req.LicenseNumber)
+	defer tx.Rollback()
+
+	var exists bool
+	err = tx.Get(&exists, `
+	  	SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)
+	`, req.Email)
 
 	if err != nil {
-		return nil, fmt.Errorf("Data error: %w", err)
+		return fmt.Errorf("database error: %w", err)
 	}
 
 	if exists {
-		return nil, errors.New("Driver with this license number already exist")
+		return errors.New("an account with this email already exists")
 	}
 
-	// Parse license expiry date
-	expiryDate, err := time.Parse("2006-01-02", req.LicenseExpiryDate)
+	hashedPassword, err := utils.HashPassword(req.Password)
+
 	if err != nil {
-		return nil, errors.New("invalid license_expiry_date format. Use YYYY-MM-DD")
+		return fmt.Errorf("failed to hash password: %w", err)
 	}
-
-	// Check if license is expired
-	if expiryDate.Before(time.Now()) {
-		return nil, errors.New("driver license has expired")
-	}
-
-	// Convert languages to JSON
-	languagesJSON, err := json.Marshal(req.Languages)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal languages: %w", err)
-	}
-
-	// create driver in DB
-	driverID := uuid.New().String()
-	query = `
-		INSERT INTO drivers (
-			id,first_name, last_name, age, gender, state, religion, complexion, height, phone_number, email, license_number, license_expiry_date, years_of_experience, bio, languages,
-			is_available, status
-		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, true, 'active'
-		)
-		RETURNING *
-	`
-
-	var driver models.Driver
-
-	err = database.DB.Get(&driver, query,
-		driverID, req.FirstName, req.LastName, req.Age, req.Gender,
-		req.State, req.Religion, req.Complexion, req.Height,
-		req.PhoneNumber, req.Email, req.LicenseNumber, expiryDate,
-		req.YearsOfExperience, req.Bio, languagesJSON,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create driver: %w", err)
-	}
-
-	return &driver, nil
 }
 
 // get single driver details by ID
