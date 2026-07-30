@@ -127,18 +127,23 @@ func (s *DriverService) CompleteDriverProfile(driverID string, req *models.Compl
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal languages: %w", err)
 	}
-	query = ` UPDATE drivers SET age=$1, gender=$2, state=$3, nationality=$4, religion=$5, 
-		complexion=$6, height=$7, license_number=$8, license_expiry_date=$9, years_of_experience=$10, 
-		bio=$11, language=$12, languages=$12, verification_status=$13, updated_at= CURRENT_TIMESTAMP,
-		WHERE id=$14 AND verification_status=$15 RETURNING *`,
+
+	var updated models.Driver
+	err = database.DB.Get(&updated, ` 
+		UPDATE drivers 
+		SET age=$1, gender=$2, state=$3, nationality=$4, religion=$5, 
+			complexion=$6, height=$7, license_number=$8, license_expiry_date=$9, 
+			years_of_experience=$10, bio=$11, languages=$12, languages=$12, 
+			verification_status=$13, updated_at= CURRENT_TIMESTAMP,
+		WHERE id=$14 AND verification_status=$15 
+		RETURNING *
+		`,
 		req.Age, req.Gender, req.State, req.Nationality, req.Religion,
 		req.Complexion, req.Height, req.LicenseNumber, expiryDate,
 		req.YearsOfExperience, req.Bio, languagesJSON,
 		models.DriverVerificationPendingDocuments,
-		driverID, models.DriverVerificationPendingProfile
-
-	var updated models.Driver
-	err = database.DB.Get(&updated, query)
+		driverID, models.DriverVerificationPendingProfile,
+	)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -147,6 +152,49 @@ func (s *DriverService) CompleteDriverProfile(driverID string, req *models.Compl
 		return nil, fmt.Errorf("failed to complete driver profile: %w", err)
 	}
 
+	return &updated, nil
+}
+
+func (s *DriverService) UploadDriverDocuments(driverID, nin, ninDocumentURL, licenseDocumentURL string) (*models.Driver, error) {
+	driver, err := s.GetDriverByID(driverID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if driver.VerificationStatus == models.DriverVerificationPendingProfile {
+		return nil, errors.New("please complete your profile before uploading document")
+	}
+
+	if driver.VerificationStatus != models.DriverVerificationPendingDocuments {
+		return nil, fmt.Errorf("documents already submitted or not eligible for this step (current status: %s)", driver.VerificationStatus)
+	}
+
+	var updated models.Driver
+
+	err = database.DB.Get(&updated, `
+		UPDATE drivers 
+		SET nin = $1, nin_document_url = $2, license_document_url = $3,
+			verification_status = $4, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $5 AND verification_status = $6
+		RETURNING *
+	`, nin, ninDocumentURL, licenseDocumentURL, models.DriverVerificationPendingReview,
+		driverID, models.DriverVerificationPendingDocuments)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("documents could not be submitted — status changed concurrently")
+		}
+		return nil, fmt.Errorf("failed to upload documents: %w", err)
+	}
+
+	if driver.UserID != nil {
+		if err := s.notificationService.SendDriverDocumentsReceivedNotification(*driver.UserID, driver.FirstName); err != nil {
+			log.Printf("failed to send documents-received notification: %v", err)
+		}
+	}
+	if err := s.emailService.SendDriverDocumentsReceivedEmail(driver.Email, driver.FirstName); err != nil {
+		log.Printf("failed to send documents-received email: %v", err)
+	}
 	return &updated, nil
 }
 
@@ -168,10 +216,14 @@ func (s *DriverService) GetDriverByID(driverID string) (*models.Driver, error) {
 
 func (s *DriverService) UpdateDriver(driverID string, req *models.UpdateDriverRequest) (*models.Driver, error) {
 	// check if driver exist
-	_, err := s.GetDriverByID(driverID)
+	driver, err := s.GetDriverByID(driverID)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if driver.VerificationStatus == models.DriverVerificationPendingProfile {
+		return nil, errors.New("please complete your profile first")
 	}
 
 	// dynamic update query that only update provided fields
@@ -293,13 +345,86 @@ func (s *DriverService) UpdateDriver(driverID string, req *models.UpdateDriverRe
 		RETURNING *
 		`, strings.Join(updates, ", "), argCount)
 
-	var driver models.Driver
+	var updated models.Driver
 	err = database.DB.Get(&driver, query, args...)
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to update driver: %w", err)
 	}
-	return &driver, nil
+	return &updated, nil
+}
+
+func (s *DriverService) ReviewDriverApplication(driverID, adminID string, req *models.DriverReviewRequest) (*models.Driver, error) {
+	driver, err := s.GetDriverByID(driverID)
+	if err != nil {
+		return nil, err
+	}
+
+	if driver.VerificationStatus != models.DriverVerificationPendingReview {
+		return nil, fmt.Errorf("this application is not awaiting review(current status: %s)", driver.VerificationStatus)
+	}
+
+	if !req.Approved && strings.TrimSpace(req.RejectionReason) == "" {
+		return nil, errors.New("a rejection reason is required when rejection an application")
+	}
+
+	newStatus := models.DriverVerificationRejected
+	// rejectionReason stays a typed nil (not an empty string) on approval
+	// — an approved driver's rejection_reason column should read NULL in
+	// the DB, not the empty string "", since those mean different things
+	// ("no reason was ever given" vs "a reason was given and it was blank")
+
+	var rejectionReason interface{}
+	if req.Approved {
+		newStatus = models.DriverVerificationApproved
+	} else {
+		rejectionReason = req.RejectionReason
+	}
+
+	var updated models.Driver
+	err = database.DB.Get(&updated, `
+		UPDATE drivers
+		SET verification_status = $1, rejection_reason =$2, reviewed_by = $3
+			reviewed_at = $4, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $5 AND verification_status = $6
+		RETURNING *
+	`, newStatus, rejectionReason, adminID, time.Now(), driverID, models.DriverVerificationPendingReview)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("application could not be reviewed, status changed concurrently")
+		}
+		return nil, fmt.Errorf("failed to review application: %w", err)
+	}
+
+	if driver.UserID == nil {
+		return &updated, nil
+	}
+
+	if req.Approved {
+		if err := s.notificationService.SendDriverApprovedNotification(*driver.UserID); err != nil {
+			log.Printf("failed to send driver-approved notification: %v", err)
+		}
+		// driver.Email, driver.FirstName is used to extract driver first name and email to send it to
+		if err := s.emailService.SendDriverApprovedEmail(driver.Email, driver.FirstName); err != nil {
+			log.Printf("failed to send driver-approved email: %v", err)
+		}
+	} else {
+		// driver can only reapply after 3months(thats why we have 3)
+		reapplyDate := time.Now().AddDate(0, 3, 0)
+		// Extract details 
+		if err := s.notificationService.SendDriverRejectedNotification(*driver.UserID, req.RejectionReason); err != nil {
+			log.Printf("failed to send driver-rejected notification: %v", err)
+		}
+		// Extract driver details such as FirstName, email, rejectionreason, reapply date and put in in the mail
+		// Send driver rejected email with driver.FirstName(Hello Tunde, not Hello User)
+		// 
+		if err := s.emailService.SendDriverRejectedEmail(driver.Email, driver.FirstName, req.RejectionReason, reapplyDate); err != nil {
+			log.Printf("failed to send driver-rejected email: %v", err)
+		}
+	}
+
+	return &updated, nil
 }
 
 // Soft delete driver
@@ -484,4 +609,30 @@ func (s *DriverService) GetDriverReviews(driverID string) ([]*models.Review, err
 		return nil, fmt.Errorf("Failed to fetch reviews: %w", err)
 	}
 	return reviews, nil
+}
+
+
+// SubmitBankDetails — only reachable once approved.
+func(s *DriverService) DriverSubmitBankDetails(driverID string, req *models.DriverBankDetailsRequest)(*models.Driver, error){
+	driver, err := s.GetDriverByID(driverID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if driver.VerificationStatus != models.DriverVerificationApproved {
+		return nil, errors.New("bank details can only be submitted after your application is approved")
+	}
+
+	var updated models.Driver
+	err = database.DB.Get(&updated, `
+		UPDATE drivers
+		SET bank_account_name = $1, bank_account_number = $2, bank_name = $3, updated = CURRENT_TIMESTAMP
+		WHERE id = $4 AND verification_status = $5
+		RETURNING *
+	`, req.BankAccountName, req.BankAccountNumber, req.BankName, driverID, models.DriverVerificationApproved)
+	if err != nil {
+		return nil, fmt.Errorf("failed to submit bank details: %w", err)
+	}
+	return &updated, nil
 }
