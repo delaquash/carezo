@@ -3,14 +3,17 @@ package models
 import "time"
 
 const (
-	NotificationTypeBookingCreated       = "booking_created"
-	NotificationTypePaymentSuccess       = "payment_success"
-	NotificationTypeBookingCancelled     = "booking_cancelled"
-	NotificationtypePickup               = "vehicle_picked_up"
-	NotificationTypeDropoff              = "vehicle_dropped_off"
-	NotificationTypeReturned             = "vehicle_returned"
-	NotificationTypeLateCarReturnWarning = "late_return_warning"
-	NotificationTypeLateCarReturn        = "late_return"
+	NotificationTypeBookingCreated          = "booking_created"
+	NotificationTypePaymentSuccess          = "payment_success"
+	NotificationTypeBookingCancelled        = "booking_cancelled"
+	NotificationtypePickup                  = "vehicle_picked_up"
+	NotificationTypeDropoff                 = "vehicle_dropped_off"
+	NotificationTypeReturned                = "vehicle_returned"
+	NotificationTypeLateCarReturnWarning    = "late_return_warning"
+	NotificationTypeLateCarReturn           = "late_return"
+	NotificationTypeDriverDocumentsReceived = "driver_documents_received"
+	NotificationTypeDriverApproved          = "driver_approved"
+	NotificationTypeDriverRejected          = "driver_rejected"
 )
 
 type Notification struct {

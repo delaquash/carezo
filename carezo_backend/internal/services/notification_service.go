@@ -248,6 +248,36 @@ func (s *NotificationService) DeleteNotification(notificationID, userID string) 
 	return nil
 }
 
+func (s *NotificationService) SendDriverDocumentsReceivedNotification(userID, firstName string) error {
+	return s.CreateNotification(&models.CreateNotificationRequest{
+		UserID:  userID,
+		Title:   "Documents received",
+		Message: "We've received your document and they are now under review.",
+		Type:    models.NotificationTypeDriverDocumentsReceived,
+		Data:    map[string]interface{}{},
+	})
+}
+
+func (s *NotificationService) SendDriverApprovedNotification(userID string) error {
+	return s.CreateNotification(&models.CreateNotificationRequest{
+		UserID:  userID,
+		Title:   "You're approved!",
+		Message: "Your driver application has been approved. You can now add your payout details.",
+		Type:    models.NotificationTypeDriverApproved,
+		Data:    map[string]interface{}{},
+	})
+}
+
+func (s *NotificationService) SendDriverRejectedNotification(userID, reason string) error {
+	return s.CreateNotification(&models.CreateNotificationRequest{
+		UserID:  userID,
+		Title:   "Application update",
+		Message: "Your driver application was not approved this time.",
+		Type:    models.NotificationTypeDriverRejected,
+		Data:    map[string]interface{}{"reason": reason},
+	})
+}
+
 func (s *NotificationService) DeleteAllNotification(userID string) error {
 	query := `
 	DELETE FROM notifications
