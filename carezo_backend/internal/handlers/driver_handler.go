@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/delaquash/carezo/configs"
 	models "github.com/delaquash/carezo/internal/model"
 	"github.com/delaquash/carezo/internal/services"
 	response "github.com/delaquash/carezo/pkg"
@@ -18,10 +19,10 @@ type DriverHandler struct {
 	cloudinaryServices services.CloudinaryServiceInterface
 }
 
-func NewDriverHandler(cloudinaryServices services.CloudinaryServiceInterface) *DriverHandler {
+func NewDriverHandler(cfg *configs.Config, cloudinaryServices services.CloudinaryServiceInterface) *DriverHandler {
 
 	return &DriverHandler{
-		driverService:      services.NewDriverService(),
+		driverService:      services.NewDriverService(cfg),
 		reviewServices:     services.NewReviewService(),
 		cloudinaryServices: cloudinaryServices,
 	}
@@ -29,16 +30,16 @@ func NewDriverHandler(cloudinaryServices services.CloudinaryServiceInterface) *D
 
 // Admin creates new driver, photo is optional
 // POST /api/admin/drivers
-func (h *DriverHandler) CreateDriver(c *gin.Context) {
-	var req models.CreateDriverRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+func (h *DriverHandler) RegisterDriver(c *gin.Context) {
+	var reg models.DriverRegisterRequest
+	if err := c.ShouldBindJSON(&reg); err != nil {
 		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
 		return
 	}
 
 	// no length-check needed here — a driver has at most ONE photo, not an array
 
-	driver, err := h.driverService.CreateDriver(&req)
+	driver, err := h.driverService.RegisterDriver(&reg)
 
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
@@ -47,6 +48,9 @@ func (h *DriverHandler) CreateDriver(c *gin.Context) {
 
 	response.Success(c, http.StatusCreated, "Driver created successfully", driver)
 }
+
+
+
 
 // Get single driver details  or profile and it is prublic
 // GET /api/driver/:id\

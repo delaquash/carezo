@@ -22,6 +22,7 @@ type Driver struct {
 	Age        int    `json:"age" db:"age"`
 	Gender     string `json:"gender" db:"gender"`
 	State      string `json:"state" db:"state"`
+		Nationality string  `json:"nationality" db:"nationality"`
 	Religion   string `json:"religion" db:"religion"`
 	Complexion string `json:"complexion" db:"complexion"`
 	Height     int    `json:"height" db:"height"`
@@ -39,6 +40,9 @@ type Driver struct {
 	YearsOfExperience int     `json:"years_of_experience" db:"years_of_experience"`
 	Bio               *string `json:"bio,omitempty" db:"bio"`
 	Languages         JSONB   `json:"languages" db:"languages"`
+
+	ProfileImageURL      *string `json:"profile_image_url,omitempty" db:"profile_image_url"`
+	ProfileImagePublicID *string `json:"profile_image_public_id,omitempty" db:"profile_image_public_id"`
 
 	IsAvailable bool   `json:"is_available" db:"is_available"`
 	Status      string `json:"status" db:"status"`

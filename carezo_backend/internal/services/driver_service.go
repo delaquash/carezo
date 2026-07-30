@@ -17,9 +17,10 @@ import (
 )
 
 type DriverService struct {
-	cfg          *configs.Config
-	otpService   *OTPService
-	emailService *EmailService
+	cfg                 *configs.Config
+	otpService          *OTPService
+	emailService        *EmailService
+	notificationService *NotificationService
 }
 
 func NewDriverService(cfg *configs.Config) *DriverService {
@@ -27,16 +28,17 @@ func NewDriverService(cfg *configs.Config) *DriverService {
 		cfg:          cfg,
 		otpService:   NewOTPService(cfg),
 		emailService: NewEmailService(cfg),
+		notificationService: NewNotification(),
 	}
 }
 
 // to create driver
-func (s *DriverService) RegisterDriver(req *models.DriverRegisterRequest) error {
+func (s *DriverService) RegisterDriver(req *models.DriverRegisterRequest) (*models.Driver, error)  {
 	// treat these operations as one unit. Either all of them happen, or none of them happen.
 	// if it doesnt happen then rollback
 	tx, err := database.DB.Beginx()
 	if err != nil {
-		return fmt.Errorf("failed to start transaction: %w", err)
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
 	}
 
 	defer tx.Rollback()
@@ -47,17 +49,17 @@ func (s *DriverService) RegisterDriver(req *models.DriverRegisterRequest) error 
 	`, req.Email)
 
 	if err != nil {
-		return fmt.Errorf("database error: %w", err)
+		return nil, fmt.Errorf("database error: %w", err)
 	}
 
 	if exists {
-		return errors.New("an account with this email already exists")
+		return nil, errors.New("an account with this email already exists")
 	}
 
 	hashedPassword, err := utils.HashPassword(req.Password)
 
 	if err != nil {
-		return fmt.Errorf("failed to hash password: %w", err)
+		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
 	//  the LOGIN account. role='driver' is the single value that
@@ -69,21 +71,22 @@ func (s *DriverService) RegisterDriver(req *models.DriverRegisterRequest) error 
 		VALUES ($1, $2, $3, $4, $5, 'driver', 'active', false)
 	`, userID, req.Email, hashedPassword, req.FirstName, req.LastName)
 	if err != nil {
-		return fmt.Errorf("failed to create driver account: %w", err)
+		return nil,  fmt.Errorf("failed to create driver account: %w", err)
 	}
 
 	driverID := uuid.New().String()
+	var driver models.Driver
 	_, err = tx.Exec(`
 		INSERT INTO drivers (id, user_id, first_name, last_name, phone_number, email, verification_status, is_available)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, false)
 	`, driverID, userID, req.FirstName, req.LastName, req.PhoneNumber, req.Email, models.DriverVerificationPendingProfile)
 	if err != nil {
-		return fmt.Errorf("failed to create driver profile: %w", err)
+		return nil, fmt.Errorf("failed to create driver profile: %w", err)
 	}
 
 	otp, err := s.otpService.GenerateAndStoreOTP(req.Email)
 	if err != nil {
-		return fmt.Errorf("failed to generate otp: %w", err)
+		return nil, fmt.Errorf("failed to generate otp: %w", err)
 	}
 
 	// Commit BEFORE sending the email. The database write is the part
@@ -93,14 +96,14 @@ func (s *DriverService) RegisterDriver(req *models.DriverRegisterRequest) error 
 	// driver can recover via the EXISTING /api/auth/resend-otp endpoint —
 	// no new recovery path needed.
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit driver registration: %w", err)
+		return nil, fmt.Errorf("failed to commit driver registration: %w", err)
 	}
 
 	if err := s.emailService.SendOTPEmail(req.Email, otp); err != nil {
 		log.Printf("failed to send registration OTP email to driver %s: %v", req.Email, err)
 	}
 
-	return nil
+	return &driver, nil
 
 }
 
@@ -412,13 +415,13 @@ func (s *DriverService) ReviewDriverApplication(driverID, adminID string, req *m
 	} else {
 		// driver can only reapply after 3months(thats why we have 3)
 		reapplyDate := time.Now().AddDate(0, 3, 0)
-		// Extract details 
+		// Extract details
 		if err := s.notificationService.SendDriverRejectedNotification(*driver.UserID, req.RejectionReason); err != nil {
 			log.Printf("failed to send driver-rejected notification: %v", err)
 		}
 		// Extract driver details such as FirstName, email, rejectionreason, reapply date and put in in the mail
 		// Send driver rejected email with driver.FirstName(Hello Tunde, not Hello User)
-		// 
+		//
 		if err := s.emailService.SendDriverRejectedEmail(driver.Email, driver.FirstName, req.RejectionReason, reapplyDate); err != nil {
 			log.Printf("failed to send driver-rejected email: %v", err)
 		}
@@ -611,9 +614,8 @@ func (s *DriverService) GetDriverReviews(driverID string) ([]*models.Review, err
 	return reviews, nil
 }
 
-
 // SubmitBankDetails — only reachable once approved.
-func(s *DriverService) DriverSubmitBankDetails(driverID string, req *models.DriverBankDetailsRequest)(*models.Driver, error){
+func (s *DriverService) DriverSubmitBankDetails(driverID string, req *models.DriverBankDetailsRequest) (*models.Driver, error) {
 	driver, err := s.GetDriverByID(driverID)
 
 	if err != nil {

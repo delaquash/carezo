@@ -77,7 +77,7 @@ func main() {
 	// handlers
 	authHandler := handlers.NewAuthHandler(cfg)
 	carHandler := handlers.NewCarHandler(cloudinaryService)
-	driverHandler := handlers.NewDriverHandler(cloudinaryService)
+	driverHandler := handlers.NewDriverHandler(cfg, cloudinaryService)
 	userHandler := handlers.NewUserHandler(cloudinaryService)
 	bookingHandler := handlers.NewBookingHandler()
 	paymentHandler := handlers.NewPaymentHandler(cfg)
@@ -197,7 +197,7 @@ func main() {
 			// Driver management
 			drivers := admin.Group("/drivers")
 			{
-				drivers.POST("", driverHandler.CreateDriver)
+				drivers.POST("", driverHandler.RegisterDriver)
 				drivers.PUT("/:id", driverHandler.UpdateDriver)
 				drivers.DELETE("/:id", driverHandler.DeleteDriver)
 			}

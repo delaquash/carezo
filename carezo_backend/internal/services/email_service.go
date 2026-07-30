@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/delaquash/carezo/configs"
 	"gopkg.in/gomail.v2"
@@ -73,4 +74,40 @@ func (s *EmailService) sendEmail(to, subject, body string) error {
 		return fmt.Errorf("failed to send email: %w", err)
 	}
 	return nil
+}
+
+
+func (s *EmailService) SendDriverDocumentsReceivedEmail(to, firstName string) error {
+	subject := "We've received your documents"
+	body := fmt.Sprintf(`
+		<html><body>
+		<h2>Hi %s,</h2>
+		<p>We've received your NIN and driver's license. Our team will review them and get back to you soon.</p>
+		</body></html>
+	`, firstName)
+	return s.sendEmail(to, subject, body)
+}
+
+func (s *EmailService) SendDriverApprovedEmail(to, firstName string) error {
+	subject := "You're approved to drive with Carezo!"
+	body := fmt.Sprintf(`
+		<html><body>
+		<h2>Congratulations, %s!</h2>
+		<p>Your driver application has been approved. Log in to the app to add your payout account details.</p>
+		</body></html>
+	`, firstName)
+	return s.sendEmail(to, subject, body)
+}
+
+func (s *EmailService) SendDriverRejectedEmail(to, firstName, reason string, reapplyDate time.Time) error {
+	subject := "Update on your Carezo driver application"
+	body := fmt.Sprintf(`
+		<html><body>
+		<h2>Hi %s,</h2>
+		<p>After review, we're unable to approve your driver application at this time.</p>
+		<p><strong>Reason:</strong> %s</p>
+		<p>You're welcome to reapply starting %s.</p>
+		</body></html>
+	`, firstName, reason, reapplyDate.Format("January 2, 2006"))
+	return s.sendEmail(to, subject, body)
 }
