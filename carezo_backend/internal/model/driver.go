@@ -63,11 +63,12 @@ type Driver struct {
 
 // CreateDriverRequest - for admin
 type DriverRegisterRequest struct {
-	FirstName   string  `json:"first_name" binding:"required"`
-	LastName    string  `json:"last_name" binding:"required"`
-	Gender      string  `json:"gender" binding:"required,oneof=male female"`
-	PhoneNumber string  `json:"phone_number" binding:"required"`
-	Email       *string `json:"email,omitempty"`
+	FirstName   string `json:"first_name" binding:"required"`
+	LastName    string `json:"last_name" binding:"required"`
+	Gender      string `json:"gender" binding:"required,oneof=male female"`
+	PhoneNumber string `json:"phone_number" binding:"required"`
+	Email       string `json:"email,omitempty"`
+	Password    string `json:"password" binding:"required,min=8"`
 }
 
 type CompleteDriverProfileRequest struct {
