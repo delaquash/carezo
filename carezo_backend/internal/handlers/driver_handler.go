@@ -49,9 +49,6 @@ func (h *DriverHandler) RegisterDriver(c *gin.Context) {
 	response.Success(c, http.StatusCreated, "Driver created successfully", driver)
 }
 
-
-
-
 // Get single driver details  or profile and it is prublic
 // GET /api/driver/:id\
 func (h *DriverHandler) GetDriver(c *gin.Context) {
@@ -209,4 +206,60 @@ func (h *DriverHandler) CreateReview(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusCreated, "Review created successfully", review)
+}
+
+func (h *DriverHandler) ReviewDriverApplication(c *gin.Context) {
+	adminID, exists := c.Get("user_id")
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	driverID := c.Param("id")
+
+	var req models.DriverReviewRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		return
+	}
+
+	updated, err := h.driverService.ReviewDriverApplication(driverID, adminID.(string), &req)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	message := "Driver application approved"
+	if !req.Approved {
+		message = "Driver application rejected"
+	}
+	response.Success(c, http.StatusOK, message, updated)
+}
+
+func (h *DriverHandler) SubmitBankDetails(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	driver, err := h.driverService.GetDriverByUserID(userID.(string))
+	if err != nil {
+		response.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	var req models.DriverBankDetailsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		return
+	}
+
+	updated, err := h.driverService.DriverSubmitBankDetails(driver.ID, &req)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Bank details submitted successfully", updated)
 }

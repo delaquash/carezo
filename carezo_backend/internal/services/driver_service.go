@@ -217,6 +217,19 @@ func (s *DriverService) GetDriverByID(driverID string) (*models.Driver, error) {
 
 }
 
+func (s *DriverService) GetDriverByUserID(userID string) (*models.Driver, error) {
+	var driver models.Driver
+	query := `SELECT * FROM drivers WHERE user_id = $1 AND deleted_at IS NULL`
+	err := database.DB.Get(&driver, query, userID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("no driver profile found for this account")
+		}
+		return nil, fmt.Errorf("database error: %w", err)
+	}
+	return &driver, nil
+}
+
 func (s *DriverService) UpdateDriver(driverID string, req *models.UpdateDriverRequest) (*models.Driver, error) {
 	// check if driver exist
 	driver, err := s.GetDriverByID(driverID)
