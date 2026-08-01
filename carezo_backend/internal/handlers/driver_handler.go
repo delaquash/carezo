@@ -96,32 +96,33 @@ func (h *DriverHandler) UpdateDriver(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Driver updated successfully", driver)
 }
 
-// Delete driver by admin — soft-delete + remove their profile photo
-// DELETE /api/admin/drivers/:id
+func (h *DriverHandler) UoloadDriverDocument(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
 
-func (h *DriverHandler) DeleteDriver(c *gin.Context) {
-	driverID := c.Param("id")
-	// fetch BEFORE deleting so we still have their profile_image_public_id
-	driver, err := h.driverService.GetDriverByID(driverID)
+	driver, err := h.driverService.GetDriverByUserID(userID.(string))
 	if err != nil {
 		response.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
-	// soft-delete in PostgreSQL — driver disappears from app instantly
-	if err := h.driverService.DeleteDriver(driverID); err != nil {
+
+	var req models.CompleteDriverProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		return
+	}
+
+	updated, err := h.driverService.CompleteDriverProfile(driver.ID, &req)
+	if err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	// only attempt cloudinary cleanuo if the driver had a photo
-	if driver.ProfileImagePublicID != nil && *driver.ProfileImagePublicID != "" {
-		go func(publicID string) {
-			if err := h.cloudinaryServices.DeleteImage(publicID); err != nil {
-				fmt.Printf("[Cloudinary] failed to delete driver photo %s: %v\n", publicID, err)
-			}
-		}(*driver.ProfileImagePublicID)
-	}
-	response.Success(c, http.StatusOK, "Driver deleted successfully", nil)
+	response.Success(c, http.StatusOK, "Profile completed successfully", updated)
+
 }
 
 // GET /api/drivers/search
@@ -209,13 +210,12 @@ func (h *DriverHandler) CreateReview(c *gin.Context) {
 }
 
 func (h *DriverHandler) ReviewDriverApplication(c *gin.Context) {
+	driverID := c.Param("id")
 	adminID, exists := c.Get("user_id")
 	if !exists {
 		response.Error(c, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-
-	driverID := c.Param("id")
 
 	var req models.DriverReviewRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -262,4 +262,60 @@ func (h *DriverHandler) SubmitBankDetails(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "Bank details submitted successfully", updated)
+}
+
+func (h *DriverHandler) CompleteDriverProfile(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	driver, err := h.driverService.GetDriverByUserID(userID.(string))
+	if err != nil {
+		response.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	var req models.CompleteDriverProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		return
+	}
+
+	updated, err := h.driverService.CompleteDriverProfile(driver.ID, &req)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Profile completed successfully", updated)
+}
+
+// Delete driver by admin — soft-delete + remove their profile photo
+// DELETE /api/admin/drivers/:id
+
+func (h *DriverHandler) DeleteDriver(c *gin.Context) {
+	driverID := c.Param("id")
+	// fetch BEFORE deleting so we still have their profile_image_public_id
+	driver, err := h.driverService.GetDriverByID(driverID)
+	if err != nil {
+		response.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+	// soft-delete in PostgreSQL — driver disappears from app instantly
+	if err := h.driverService.DeleteDriver(driverID); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// only attempt cloudinary cleanuo if the driver had a photo
+	if driver.ProfileImagePublicID != nil && *driver.ProfileImagePublicID != "" {
+		go func(publicID string) {
+			if err := h.cloudinaryServices.DeleteImage(publicID); err != nil {
+				fmt.Printf("[Cloudinary] failed to delete driver photo %s: %v\n", publicID, err)
+			}
+		}(*driver.ProfileImagePublicID)
+	}
+	response.Success(c, http.StatusOK, "Driver deleted successfully", nil)
 }

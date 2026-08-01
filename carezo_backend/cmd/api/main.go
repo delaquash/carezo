@@ -115,6 +115,9 @@ func main() {
 			drivers.GET("/search", driverHandler.SearchDrivers)
 			drivers.GET("/:id", driverHandler.GetDriver)
 			drivers.GET("/:id/reviews", driverHandler.GetDriverReviews)
+			drivers.PUT("/driver/complete-profile", driverHandler.CompleteDriverProfile)
+			// drivers.POST("/driver/documents", driverHandler.UploadDriverDocuments)
+			drivers.POST("/driver/bank-details", driverHandler.SubmitBankDetails)
 		}
 
 		payment := api.Group("/payments")

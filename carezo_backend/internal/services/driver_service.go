@@ -25,15 +25,15 @@ type DriverService struct {
 
 func NewDriverService(cfg *configs.Config) *DriverService {
 	return &DriverService{
-		cfg:          cfg,
-		otpService:   NewOTPService(cfg),
-		emailService: NewEmailService(cfg),
+		cfg:                 cfg,
+		otpService:          NewOTPService(cfg),
+		emailService:        NewEmailService(cfg),
 		notificationService: NewNotification(),
 	}
 }
 
 // to create driver
-func (s *DriverService) RegisterDriver(req *models.DriverRegisterRequest) (*models.Driver, error)  {
+func (s *DriverService) RegisterDriver(req *models.DriverRegisterRequest) (*models.Driver, error) {
 	// treat these operations as one unit. Either all of them happen, or none of them happen.
 	// if it doesnt happen then rollback
 	tx, err := database.DB.Beginx()
@@ -71,7 +71,7 @@ func (s *DriverService) RegisterDriver(req *models.DriverRegisterRequest) (*mode
 		VALUES ($1, $2, $3, $4, $5, 'driver', 'active', false)
 	`, userID, req.Email, hashedPassword, req.FirstName, req.LastName)
 	if err != nil {
-		return nil,  fmt.Errorf("failed to create driver account: %w", err)
+		return nil, fmt.Errorf("failed to create driver account: %w", err)
 	}
 
 	driverID := uuid.New().String()
@@ -443,33 +443,6 @@ func (s *DriverService) ReviewDriverApplication(driverID, adminID string, req *m
 	return &updated, nil
 }
 
-// Soft delete driver
-func (s *DriverService) DeleteDriver(driverID string) error {
-
-	// check if driver exist
-	_, err := s.GetDriverByID(driverID)
-
-	if err != nil {
-		return err
-	}
-
-	// soft delete if driver exist
-	query := `UPDATE drivers SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL`
-
-	result, err := database.DB.Exec(query, driverID)
-
-	if err != nil {
-		return fmt.Errorf("Failed to delete driver: %w", err)
-	}
-
-	rows, _ := result.RowsAffected()
-
-	if rows == 0 {
-		return errors.New("Driver not found")
-	}
-	return nil
-}
-
 // Search for drivers and filter with pagination
 func (s *DriverService) SearchDrivers(req *models.SearchDriversRequest) (*models.DriverListResponse, error) {
 	var conditions []string
@@ -650,4 +623,31 @@ func (s *DriverService) DriverSubmitBankDetails(driverID string, req *models.Dri
 		return nil, fmt.Errorf("failed to submit bank details: %w", err)
 	}
 	return &updated, nil
+}
+
+// Soft delete driver
+func (s *DriverService) DeleteDriver(driverID string) error {
+
+	// check if driver exist
+	_, err := s.GetDriverByID(driverID)
+
+	if err != nil {
+		return err
+	}
+
+	// soft delete if driver exist
+	query := `UPDATE drivers SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL`
+
+	result, err := database.DB.Exec(query, driverID)
+
+	if err != nil {
+		return fmt.Errorf("Failed to delete driver: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+
+	if rows == 0 {
+		return errors.New("Driver not found")
+	}
+	return nil
 }
