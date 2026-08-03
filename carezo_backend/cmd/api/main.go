@@ -111,12 +111,14 @@ func main() {
 
 		drivers := api.Group("/drivers")
 		{
+			drivers.POST("", driverHandler.RegisterDriver)
 			drivers.GET("", driverHandler.ListAllDrivers)
 			drivers.GET("/search", driverHandler.SearchDrivers)
 			drivers.GET("/:id", driverHandler.GetDriver)
+			drivers.PUT("/:id", driverHandler.UpdateDriver)
 			drivers.GET("/:id/reviews", driverHandler.GetDriverReviews)
 			drivers.PUT("/driver/complete-profile", driverHandler.CompleteDriverProfile)
-			// drivers.POST("/driver/documents", driverHandler.UploadDriverDocuments)
+			drivers.POST("/driver/documents", driverHandler.UploadDriverDocument)
 			drivers.POST("/driver/bank-details", driverHandler.SubmitBankDetails)
 		}
 
@@ -200,9 +202,9 @@ func main() {
 			// Driver management
 			drivers := admin.Group("/drivers")
 			{
-				drivers.POST("", driverHandler.RegisterDriver)
-				drivers.PUT("/:id", driverHandler.UpdateDriver)
+
 				drivers.DELETE("/:id", driverHandler.DeleteDriver)
+				drivers.POST("/drivers/:id/review", driverHandler.ReviewDriverApplication)
 			}
 
 			// User management
