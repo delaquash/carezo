@@ -95,8 +95,7 @@ func (h *DriverHandler) UpdateDriver(c *gin.Context) {
 	}
 	response.Success(c, http.StatusOK, "Driver updated successfully", driver)
 }
-
-func (h *DriverHandler) UploadDriverDocument(c *gin.Context) {
+func (h *DriverHandler) UploadDriverDocuments(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
 		response.Error(c, http.StatusUnauthorized, "Unauthorized")
@@ -109,22 +108,64 @@ func (h *DriverHandler) UploadDriverDocument(c *gin.Context) {
 		return
 	}
 
-	var req models.CompleteDriverProfileRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+	nin := c.PostForm("nin")
+	if nin == "" {
+		response.Error(c, http.StatusBadRequest, "NIN is required")
 		return
 	}
 
-	updated, err := h.driverService.CompleteDriverProfile(driver.ID, &req)
+	ninFileHeader, err := c.FormFile("nin_document")
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "NIN document file is required")
+		return
+	}
+	licenseFileHeader, err := c.FormFile("license_document")
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "License document file is required")
+		return
+	}
+
+	// FormFile gives us a *multipart.FileHeader — metadata only (name, size).
+	// UploadImage needs the actual readable multipart.File, so we Open()
+	// each header first. Same open→close→pass-elsewhere pattern your own
+	// UploadMultipleImages already uses internally.
+	ninFile, err := ninFileHeader.Open()
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Failed to read NIN document: "+err.Error())
+		return
+	}
+	defer ninFile.Close()
+
+	// "driver_documents" as the Cloudinary folder — keeps these separate
+	// from car/review images, matching how you'd browse the Cloudinary
+	// dashboard by asset type rather than everything dumped in one folder.
+	ninUpload, err := h.cloudinaryServices.UploadImage(ninFile, "driver_documents")
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to upload NIN document: "+err.Error())
+		return
+	}
+
+	licenseFile, err := licenseFileHeader.Open()
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Failed to read license document: "+err.Error())
+		return
+	}
+	defer licenseFile.Close()
+
+	licenseUpload, err := h.cloudinaryServices.UploadImage(licenseFile, "driver_documents")
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to upload license document: "+err.Error())
+		return
+	}
+
+	updated, err := h.driverService.UploadDriverDocuments(driver.ID, nin, ninUpload.URL, licenseUpload.URL)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Profile completed successfully", updated)
-
+	response.Success(c, http.StatusOK, "Documents submitted successfully, awaiting review", updated)
 }
-
 // GET /api/drivers/search
 func (h *DriverHandler) SearchDrivers(c *gin.Context) {
 	var req models.SearchDriversRequest

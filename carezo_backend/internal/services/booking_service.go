@@ -94,20 +94,24 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 
 	// fetch driver
 
-	var driver models.Driver
-	err = tx.Get(&driver, `SELECT * FROM drivers WHERE id = $1 AND deleted_at IS NULL`, req.DriverID)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.New("driver not found")
+	if req.DriverID != uuid.Nil {
+		var driver models.Driver
+		err = tx.Get(&driver, `SELECT * FROM drivers WHERE id = $1 AND deleted_at IS NULL`, req.DriverID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil, errors.New("driver not found")
+			}
+			return nil, fmt.Errorf("database error: %w", err)
 		}
-		return nil, fmt.Errorf("database error: %w", err)
-	}
 
-	if !driver.IsAvailable {
-		return nil, errors.New("driver is currently unavailable")
-	}
+		if !driver.IsAvailable {
+			return nil, errors.New("driver is currently unavailable")
+		}
+		if driver.VerificationStatus != models.DriverVerificationApproved {
+			return nil, errors.New("this driver is not yet approved to accept bookings")
+		}
 
+	}
 	// check for car overlapping
 	var carBooked bool
 

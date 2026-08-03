@@ -118,7 +118,7 @@ func main() {
 			drivers.PUT("/:id", driverHandler.UpdateDriver)
 			drivers.GET("/:id/reviews", driverHandler.GetDriverReviews)
 			drivers.PUT("/driver/complete-profile", driverHandler.CompleteDriverProfile)
-			drivers.POST("/driver/documents", driverHandler.UploadDriverDocument)
+			drivers.POST("/driver/documents", driverHandler.UploadDriverDocuments)
 			drivers.POST("/driver/bank-details", driverHandler.SubmitBankDetails)
 		}
 
