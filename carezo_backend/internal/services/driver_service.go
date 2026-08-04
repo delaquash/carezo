@@ -370,7 +370,9 @@ func (s *DriverService) UpdateDriver(driverID string, req *models.UpdateDriverRe
 	}
 	return &updated, nil
 }
-
+// this is to review driver application for approval or rejection. 
+// if rejected, a reason must be provided. 
+// if approved, the driver will be notified via email and notification
 func (s *DriverService) ReviewDriverApplication(driverID, adminID string, req *models.DriverReviewRequest) (*models.Driver, error) {
 	driver, err := s.GetDriverByID(driverID)
 	if err != nil {
