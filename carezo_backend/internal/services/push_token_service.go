@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/delaquash/carezo/internal/database"
 	models "github.com/delaquash/carezo/internal/model"
@@ -78,7 +79,13 @@ func (s *PushNotificationService) SendPushNotification(userID, title, body strin
 		req.Header.Set("Accept", "application/json")
 
 
-		
+		client := &http.Client{Timeout: 10 * time.Second} 
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Printf("failed to send push notification to token %s: %v", t.Token, err)
+			continue // one failed device shouldn't stop the others from receiving theirs
+		}
+		resp.Body.Close()
 
 	}
 }
