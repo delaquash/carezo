@@ -76,10 +76,12 @@ func (s *DriverService) RegisterDriver(req *models.DriverRegisterRequest) (*mode
 
 	driverID := uuid.New().String()
 	var driver models.Driver
-	_, err = tx.Exec(`
-		INSERT INTO drivers (id, user_id, first_name, last_name, phone_number, email, verification_status, is_available)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, false)
+	err = tx.Get(&driver, `
+    INSERT INTO drivers (id, user_id, first_name, last_name, phone_number, email, verification_status, is_available)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, false)
+    RETURNING *
 	`, driverID, userID, req.FirstName, req.LastName, req.PhoneNumber, req.Email, models.DriverVerificationPendingProfile)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to create driver profile: %w", err)
 	}
@@ -136,8 +138,8 @@ func (s *DriverService) CompleteDriverProfile(driverID string, req *models.Compl
 		UPDATE drivers 
 		SET age=$1, gender=$2, state=$3, nationality=$4, religion=$5, 
 			complexion=$6, height=$7, license_number=$8, license_expiry_date=$9, 
-			years_of_experience=$10, bio=$11, languages=$12, languages=$12, 
-			verification_status=$13, updated_at= CURRENT_TIMESTAMP,
+			years_of_experience=$10, bio=$11, languages=$12, 
+			verification_status=$13, updated_at= CURRENT_TIMESTAMP
 		WHERE id=$14 AND verification_status=$15 
 		RETURNING *
 		`,
@@ -362,8 +364,7 @@ func (s *DriverService) UpdateDriver(driverID string, req *models.UpdateDriverRe
 		`, strings.Join(updates, ", "), argCount)
 
 	var updated models.Driver
-	err = database.DB.Get(&driver, query, args...)
-
+	err = database.DB.Get(&updated, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to update driver: %w", err)
 	}
@@ -400,8 +401,8 @@ func (s *DriverService) ReviewDriverApplication(driverID, adminID string, req *m
 	var updated models.Driver
 	err = database.DB.Get(&updated, `
 		UPDATE drivers
-		SET verification_status = $1, rejection_reason =$2, reviewed_by = $3
-			reviewed_at = $4, updated_at = CURRENT_TIMESTAMP
+		SET verification_status = $1, rejection_reason = $2, reviewed_by = $3,
+    		reviewed_at = $4, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $5 AND verification_status = $6
 		RETURNING *
 	`, newStatus, rejectionReason, adminID, time.Now(), driverID, models.DriverVerificationPendingReview)
@@ -615,7 +616,7 @@ func (s *DriverService) DriverSubmitBankDetails(driverID string, req *models.Dri
 	var updated models.Driver
 	err = database.DB.Get(&updated, `
 		UPDATE drivers
-		SET bank_account_name = $1, bank_account_number = $2, bank_name = $3, updated = CURRENT_TIMESTAMP
+		SET bank_account_name = $1, bank_account_number = $2, bank_name = $3, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $4 AND verification_status = $5
 		RETURNING *
 	`, req.BankAccountName, req.BankAccountNumber, req.BankName, driverID, models.DriverVerificationApproved)
