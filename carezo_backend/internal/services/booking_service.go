@@ -21,12 +21,14 @@ import (
 type BookingService struct {
 	notificationService *NotificationService
 	emailService        *EmailService
+	pushService         *PushNotificationService
 }
 
 func NewBookingService() *BookingService {
 	return &BookingService{
 		notificationService: NewNotification(),
-		emailService:        NewEmailService(configs.LoadConfig()),
+
+		emailService: NewEmailService(configs.LoadConfig()),
 	}
 }
 
@@ -262,9 +264,14 @@ func (s *BookingService) CreateBooking(userID string, req *models.CreateBookingR
 	if err != nil {
 		return nil, fmt.Errorf("failed to create booking: %w", err)
 	}
+
 	if err := s.notificationService.SendBookingCreatedNotification(userID, booking.BookingReference, booking.TotalAmount); err != nil {
 		log.Printf("failed to send booking-created notification: %v", err) // don't return err — booking already succeeded
 	}
+
+	s.pushService.SendPushNotification(userID, "Booking Confirmed", fmt.Sprintf("Your booking %s is confirmed.", booking.BookingReference), map[string]interface{}{
+		"booking_id": booking.ID,
+	})
 
 	// commit, nothing is written to the db until commit()
 	// if Commit() fails, defer Rollback() above cleans everything up

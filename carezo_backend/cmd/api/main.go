@@ -84,10 +84,11 @@ func main() {
 	notificationHandler := handlers.NewNotificationHandler()
 	reviewHandler := handlers.NewReviewHandler(cloudinaryService)
 	uploaderHandler := handlers.NewUploadHandler(cloudinaryService)
-
+	pushHandler := handlers.NewPushHandler()
 	// routes
 	api := router.Group("/api")
 	{
+		
 		//  AUTH
 		auth := api.Group("/auth")
 		{
@@ -156,6 +157,10 @@ func main() {
 				user.PUT("/update-profile", userHandler.UpdateProfile)
 				user.PUT("/complete-profile", userHandler.CompleteUserProfile)
 				user.DELETE("/delete-user", userHandler.DeleteAccount)
+			}
+			push := protected.Group("/push")
+			{
+				push.POST("/register-token", pushHandler.RegisterToken)
 			}
 			notifications := protected.Group("/notifications")
 			{
