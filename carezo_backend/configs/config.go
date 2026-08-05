@@ -58,7 +58,6 @@ type Config struct {
 	// Brevo settings
 	BrevoAPIKey string
 
-
 	// Paystack settings
 	PaystackSecretKey     string
 	PaystackPublicKey     string
@@ -158,8 +157,9 @@ func LoadConfig() *Config {
 		CloudinaryCloudName: getEnv("CLOUDINARY_CLOUD_NAME", ""),
 		CloudinaryAPIKey:    getEnv("CLOUDINARY_API_KEY", ""),
 		CloudinaryAPISecret: getEnv("CLOUDINARY_API_SECRET", ""),
+		//
+		BrevoAPIKey: getEnv("BREVO_API_KEY", ""),
 
-		// Admin seeder
 		// Admin seeder
 		AdminEmail:     getEnv("ADMIN_EMAIL", "admin@carezo.com"),
 		AdminPassword:  getEnv("ADMIN_PASSWORD", "Admin123!"),
