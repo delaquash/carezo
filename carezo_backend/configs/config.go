@@ -55,6 +55,10 @@ type Config struct {
 	GoogleClientSecret string
 	GoogleRedirectURL  string
 
+	// Brevo settings
+	BrevoAPIKey string
+
+
 	// Paystack settings
 	PaystackSecretKey     string
 	PaystackPublicKey     string

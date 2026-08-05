@@ -2,15 +2,25 @@ package services
 
 import (
 	// "crypto/tls"
-	"crypto/tls"
+
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"strconv"
+	"io"
+	"net/http"
 	"time"
 
 	"github.com/delaquash/carezo/configs"
-	"gopkg.in/gomail.v2"
 )
 
+type brevoRecipient struct {
+	Email string `json:"email"`
+}
+
+type brevoSender struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
 type EmailService struct {
 	cfg *configs.Config
 }
@@ -19,6 +29,55 @@ func NewEmailService(cfg *configs.Config) *EmailService {
 	return &EmailService{cfg: cfg}
 }
 
+type brevoEmailPayload struct {
+	Sender      brevoSender      `json:"sender"`
+	To          []brevoRecipient `json:"to"`
+	Subject     string           `json:"subject"`
+	HTMLContent string           `json:"htmlContent"`
+}
+
+func (s *EmailService) sendEmail(to, subject, body string) error {
+	payload := brevoEmailPayload{
+		Sender: brevoSender{
+			Name:  s.cfg.FromName,
+			Email: s.cfg.FromEmail, // must be a verified sender in Brevo — see the DKIM note below
+		},
+		To:          []brevoRecipient{{Email: to}},
+		Subject:     subject,
+		HTMLContent: body,
+	}
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal email payload: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", "https://api.brevo.com/v3/smtp/email", bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return fmt.Errorf("failed to create email request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("api-key", s.cfg.BrevoAPIKey) // the API key, NOT the SMTP password
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Brevo returns 201 Created on success, not 200 — checking >= 400
+	// (rather than != 200) correctly treats 201 as success without
+	// needing to hardcode the exact expected status.
+	if resp.StatusCode >= 400 {
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("brevo api error (status %d): %s", resp.StatusCode, string(respBody))
+	}
+
+	return nil
+}
 func (s *EmailService) SendOTPEmail(to, otp string) error {
 	subject := "Your Carezo Verification Code"
 	body := fmt.Sprintf(`
@@ -54,28 +113,6 @@ func (s *EmailService) SendPasswordResetEmail(to, resetToken string) error {
 
 	return s.sendEmail(to, subject, body)
 }
-
-func (s *EmailService) sendEmail(to, subject, body string) error {
-	port, err := strconv.Atoi(s.cfg.SMTPPort)
-	if err != nil {
-		return fmt.Errorf("invalid SMTP port: %w", err)
-	}
-
-	m := gomail.NewMessage()
-	m.SetHeader("From", fmt.Sprintf("%s <%s>", s.cfg.FromName, s.cfg.FromEmail))
-	m.SetHeader("To", to)
-	m.SetHeader("Subject", subject)
-	m.SetBody("text/html", body)
-
-	d := gomail.NewDialer(s.cfg.SMTPHost, port, s.cfg.SMTPUser, s.cfg.SMTPPassword)
-
-	d.TLSConfig = &tls.Config{ServerName: s.cfg.SMTPHost}
-	if err := d.DialAndSend(m); err != nil {
-		return fmt.Errorf("failed to send email: %w", err)
-	}
-	return nil
-}
-
 
 func (s *EmailService) SendDriverDocumentsReceivedEmail(to, firstName string) error {
 	subject := "We've received your documents"
