@@ -71,7 +71,7 @@ func SetUpTestApp(t *testing.T) *TestApp {
 
 	bookingHandler := handlers.NewBookingHandler()
 	carHandler := handlers.NewCarHandler(cloudinarySvc)
-	driverHandler := handlers.NewDriverHandler(cloudinarySvc)
+	driverHandler := handlers.NewDriverHandler(cfg, cloudinarySvc)
 	userHandler := handlers.NewUserHandler(cloudinarySvc)
 	authHandler := handlers.NewAuthHandler(cfg)
 	paymentHandler := handlers.NewPaymentHandler(cfg)

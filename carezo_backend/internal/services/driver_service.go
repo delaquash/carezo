@@ -67,8 +67,26 @@ func (s *DriverService) RegisterDriver(req *models.DriverRegisterRequest) (*mode
 	// about this row is mechanically identical to a customer registering.
 	userID := uuid.New().String()
 	_, err = tx.Exec(`
-		INSERT INTO users (id, email, password_hash, first_name, last_name, role, status, email_verified)
-		VALUES ($1, $2, $3, $4, $5, 'driver', 'active', false)
+		INSERT INTO users (
+		id, 
+		email, 
+		password_hash, 
+		first_name, 
+		last_name, 
+		role, 
+		status, 
+		email_verified
+	)
+		VALUES (
+		$1, 
+		$2, 
+		$3, 
+		$4, 
+		$5, 
+		'driver', 
+		'active', 
+		false
+	)
 	`, userID, req.Email, hashedPassword, req.FirstName, req.LastName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create driver account: %w", err)

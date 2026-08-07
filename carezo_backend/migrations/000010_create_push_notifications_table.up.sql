@@ -9,6 +9,6 @@ CREATE TABLE push_tokens (
     -- one row per (user, token) — re-registering the same token (app
     -- reopened, permission re-granted) should UPDATE, not duplicate
     UNIQUE (user_id, token)
-)
+);
 
 CREATE INDEX idx_push_tokens_user_id ON push_tokens(user_id);
