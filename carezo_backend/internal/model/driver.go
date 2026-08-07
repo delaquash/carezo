@@ -13,36 +13,39 @@ const (
 )
 
 type Driver struct {
-	ID string `json:"id" db:"id"`
-
+	ID     string  `json:"id" db:"id"`
 	UserID *string `json:"user_id,omitempty" db:"user_id"`
 
-	FirstName   string `json:"first_name" db:"first_name"`
-	LastName    string `json:"last_name" db:"last_name"`
-	Age         int    `json:"age" db:"age"`
-	Gender      string `json:"gender" db:"gender"`
-	State       string `json:"state" db:"state"`
-	Nationality string `json:"nationality" db:"nationality"`
-	Religion    string `json:"religion" db:"religion"`
-	Complexion  string `json:"complexion" db:"complexion"`
-	Height      int    `json:"height" db:"height"`
+	FirstName string `json:"first_name" db:"first_name"`
+	LastName  string `json:"last_name" db:"last_name"`
+	Gender    string `json:"gender" db:"gender"`
+
+	Age               *int       `json:"age,omitempty" db:"age"`
+	State             *string    `json:"state,omitempty" db:"state"`
+	Nationality       *string    `json:"nationality,omitempty" db:"nationality"`
+	Religion          *string    `json:"religion,omitempty" db:"religion"`
+	Complexion        *string    `json:"complexion,omitempty" db:"complexion"`
+	Height            *int       `json:"height,omitempty" db:"height"`
+	LicenseNumber     *string    `json:"license_number,omitempty" db:"license_number"`
+	LicenseExpiryDate *time.Time `json:"license_expiry_date,omitempty" db:"license_expiry_date"`
+	YearsOfExperience *int       `json:"years_of_experience,omitempty" db:"years_of_experience"`
 
 	PhoneNumber string `json:"phone_number" db:"phone_number"`
 	Email       string `json:"email" db:"email"`
-
-	LicenseNumber     string    `json:"license_number" db:"license_number"`
-	LicenseExpiryDate time.Time `json:"license_expiry_date" db:"license_expiry_date"`
 
 	NIN                *string `json:"nin,omitempty" db:"nin"`
 	NINDocumentURL     *string `json:"nin_document_url,omitempty" db:"nin_document_url"`
 	LicenseDocumentURL *string `json:"license_document_url,omitempty" db:"license_document_url"`
 
-	YearsOfExperience int     `json:"years_of_experience" db:"years_of_experience"`
-	Bio               *string `json:"bio,omitempty" db:"bio"`
-	Languages         JSONB   `json:"languages" db:"languages"`
+	Bio       *string `json:"bio,omitempty" db:"bio"`
+	Languages JSONB   `json:"languages" db:"languages"`
 
 	ProfileImageURL      *string `json:"profile_image_url,omitempty" db:"profile_image_url"`
 	ProfileImagePublicID *string `json:"profile_image_public_id,omitempty" db:"profile_image_public_id"`
+
+	AverageRating float64 `json:"average_rating" db:"average_rating"`
+	TotalReviews  int     `json:"total_reviews" db:"total_reviews"`
+	TotalTrips    int     `json:"total_trips" db:"total_trips"`
 
 	IsAvailable bool   `json:"is_available" db:"is_available"`
 	Status      string `json:"status" db:"status"`
@@ -61,7 +64,6 @@ type Driver struct {
 	DeletedAt *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
 }
 
-// CreateDriverRequest - for admin
 type DriverRegisterRequest struct {
 	FirstName   string `json:"first_name" binding:"required"`
 	LastName    string `json:"last_name" binding:"required"`
@@ -86,7 +88,6 @@ type CompleteDriverProfileRequest struct {
 	Languages         []string `json:"languages,omitempty"`
 }
 
-// UpdateDriverRequest - admin updates driver details
 type UpdateDriverRequest struct {
 	FirstName               *string  `json:"first_name,omitempty"`
 	LastName                *string  `json:"last_name,omitempty"`
@@ -110,7 +111,6 @@ type UpdateDriverRequest struct {
 	OldProfileImagePublicID *string  `json:"old_profile_image_public_id,omitempty"`
 }
 
-// SearchDriversRequest - Search and filter drivers
 type SearchDriversRequest struct {
 	// Filters
 	Gender        *string  `form:"gender"`
