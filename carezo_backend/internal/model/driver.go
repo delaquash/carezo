@@ -21,7 +21,7 @@ type Driver struct {
 	LastName    string `json:"last_name" db:"last_name"`
 	Age         int    `json:"age" db:"age"`
 	Gender      string `json:"gender" db:"gender"`
-	State       string `json:"state" db:"state"`
+	State       string `json:"state,omitempty"" db:"state"`
 	Nationality string `json:"nationality" db:"nationality"`
 	Religion    string `json:"religion" db:"religion"`
 	Complexion  string `json:"complexion" db:"complexion"`
