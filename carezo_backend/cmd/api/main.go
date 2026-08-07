@@ -88,7 +88,7 @@ func main() {
 	// routes
 	api := router.Group("/api")
 	{
-		
+
 		//  AUTH
 		auth := api.Group("/auth")
 		{
@@ -112,7 +112,7 @@ func main() {
 
 		drivers := api.Group("/drivers")
 		{
-			drivers.POST("", driverHandler.RegisterDriver)
+			drivers.POST("/register", driverHandler.RegisterDriver)
 			drivers.GET("", driverHandler.ListAllDrivers)
 			drivers.GET("/search", driverHandler.SearchDrivers)
 			drivers.GET("/:id", driverHandler.GetDriver)
