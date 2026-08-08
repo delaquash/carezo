@@ -95,10 +95,10 @@ func (s *DriverService) RegisterDriver(req *models.DriverRegisterRequest) (*mode
 	driverID := uuid.New().String()
 	var driver models.Driver
 	err = tx.Get(&driver, `
-    INSERT INTO drivers (id, user_id, first_name, last_name, phone_number, email, verification_status, is_available)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, false)
+    INSERT INTO drivers (id, user_id, first_name, last_name, gender, phone_number, email, verification_status, is_available)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)
     RETURNING *
-	`, driverID, userID, req.FirstName, req.LastName, req.PhoneNumber, req.Email, models.DriverVerificationPendingProfile)
+	`, driverID, userID, req.FirstName, req.LastName, req.Gender, req.PhoneNumber, req.Email, models.DriverVerificationPendingProfile)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create driver profile: %w", err)
