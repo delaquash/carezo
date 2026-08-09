@@ -425,7 +425,53 @@ func (s *DriverService) ResendDriverOTP(req *models.ResendDriverOTPRequest) erro
 	return nil
 }
 
-// func (s *DriverService) VerifyOTP(req *models)
+func (s *DriverService) VerifyOTP(req *models.VerifyDriverOTPRequest) (*models.AuthResponse, error) {
+	// 1. Verify OTP from Redis
+
+	valid, err := s.otpService.VerifyOTP(req.Email, req.OTP)
+
+	if err != nil || !valid {
+		return nil, errors.New("invalid or expired OTP")
+	}
+
+	// 2. Mark email as verified and get user
+	var driver models.Driver
+	query := `
+		UPDATE users 
+		SET email_verified = true 
+		WHERE email = $1 AND deleted_at IS NULL
+		RETURNING *
+	`
+	err = database.DB.Get(&driver, query, req.Email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("driver not found")
+		}
+		return nil, fmt.Errorf("failed to verify email: %w", err)
+	}
+
+	accessToken, err := utils.GenerateAccessToken(driver.ID, driver.Email, driver.Role, s.cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshToken, err := utils.GenerateRefreshToken(driver.ID, s.cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. Update last login time
+	query = `UPDATE users SET last_login_at = $1 WHERE id = $2`
+	database.DB.Exec(query, time.Now(), driver.ID)
+
+	// 5. Return auth response with token
+	return &models.AuthResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		Driver:         &driver,
+	}, nil
+}
+
 // this is to review driver application for approval or rejection.
 // if rejected, a reason must be provided.
 // if approved, the driver will be notified via email and notification

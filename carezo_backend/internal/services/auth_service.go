@@ -32,7 +32,7 @@ func NewAuthService(cfg *configs.Config) *AuthService {
 
 func validatePasswordStrength(password string) error {
 	if len(password) < 8 {
-		return  errors.New("password must be at least 8 characters")
+		return errors.New("password must be at least 8 characters")
 	}
 
 	if matched, _ := regexp.MatchString(`[a-z]`, password); !matched {
@@ -76,7 +76,7 @@ func (s *AuthService) Register(req *models.RegisterRequest) error {
 
 	// 2. Validate password strength\
 	if err := validatePasswordStrength(req.Password); err != nil {
-		return err 
+		return err
 	}
 	// hashed password
 	hashedPassword, err := utils.HashPassword(req.Password)
@@ -341,11 +341,10 @@ func (s *AuthService) ResetPassword(req *models.ResetPasswordRequest) error {
 	return nil
 }
 
-
-func (s *AuthService) GoogleSignIn(req *models.GoogleSignInRequest)(*models.AuthResponse, error){
+func (s *AuthService) GoogleSignIn(req *models.GoogleSignInRequest) (*models.AuthResponse, error) {
 	ctx := context.Background()
 
-	payload, err  := idtoken.Validate(ctx, req.IDToken, s.cfg.GoogleClientID)
+	payload, err := idtoken.Validate(ctx, req.IDToken, s.cfg.GoogleClientID)
 	if err != nil {
 		return nil, fmt.Errorf("ivalid google token: %w", err)
 	}
@@ -387,7 +386,6 @@ func (s *AuthService) GoogleSignIn(req *models.GoogleSignInRequest)(*models.Auth
 		}
 	}
 
-
 	// From here, identical to your existing Login/VerifyOTP — issue YOUR
 	// OWN JWT, using your own GenerateAccessToken.
 
@@ -401,8 +399,8 @@ func (s *AuthService) GoogleSignIn(req *models.GoogleSignInRequest)(*models.Auth
 	}
 
 	return &models.AuthResponse{
-		AccessToken: accessToken,
+		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		User: &user,
+		User:         &user,
 	}, nil
 }
