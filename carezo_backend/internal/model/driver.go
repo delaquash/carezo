@@ -59,6 +59,12 @@ type Driver struct {
 	BankAccountNumber *string `json:"bank_account_number,omitempty" db:"bank_account_number"`
 	BankName          *string `json:"bank_name,omitempty" db:"bank_name"`
 
+	// Verification
+	EmailVerified          bool       `json:"email_verified" db:"email_verified"`
+	ProfileCompleted       bool       `json:"profile_completed" db:"profile_completed"`
+	EmailVerificationToken *string    `json:"-" db:"email_verification_token"`
+	OTPExpiresAt           *time.Time `json:"-" db:"otp_expires_at"`
+
 	CreatedAt time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
 	DeletedAt *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
@@ -133,6 +139,15 @@ type SearchDriversRequest struct {
 	// Pagination
 	Page    int `form:"page" binding:"min=1"`
 	PerPage int `form:"per_page" binding:"min=1,max=100"`
+}
+
+type VerifyDriverOTPRequest struct {
+	Email string `json:"email" binding:"required,email"`
+	OTP   string `json:"otp" binding:"required,len=6"`
+}
+
+type ResendDriverOTPRequest struct {
+	Email string `json:"email" binding:"required,email"`
 }
 
 // DriverListResponse - Response with pagination

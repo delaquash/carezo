@@ -388,8 +388,46 @@ func (s *DriverService) UpdateDriver(driverID string, req *models.UpdateDriverRe
 	}
 	return &updated, nil
 }
-// this is to review driver application for approval or rejection. 
-// if rejected, a reason must be provided. 
+
+func (s *DriverService) ResendDriverOTP(req *models.ResendDriverOTPRequest) error {
+	// check if the driver exists
+	var driver models.Driver
+	query := `SELECT * FROM drivers WHERE email = $1 AND deleted_at IS NULL`
+	err := database.DB.Get(&driver, query, req.Email)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return errors.New("driver not found")
+		}
+		return fmt.Errorf("database error: %w", err)
+	}
+
+	// dont resend if email is already verified
+	if driver.EmailVerified {
+		return errors.New("email is already verified")
+
+	}
+
+	// generate new otp
+	otp, err := s.otpService.GenerateAndStoreOTP(req.Email)
+	if err != nil {
+		return fmt.Errorf("Failed to generate OTP: %w", err)
+
+	}
+
+	// send otp via email
+	err = s.emailService.SendOTPEmail(req.Email, otp)
+	if err != nil {
+		fmt.Printf("Warning: Failed to send OTP email: %v\n", err)
+		return fmt.Errorf("failed to resend verification email: %w", err)
+	}
+	fmt.Printf("OTP resent to %s: %s\n", req.Email, otp)
+	return nil
+}
+
+// func (s *DriverService) VerifyOTP(req *models)
+// this is to review driver application for approval or rejection.
+// if rejected, a reason must be provided.
 // if approved, the driver will be notified via email and notification
 func (s *DriverService) ReviewDriverApplication(driverID, adminID string, req *models.DriverReviewRequest) (*models.Driver, error) {
 	driver, err := s.GetDriverByID(driverID)
