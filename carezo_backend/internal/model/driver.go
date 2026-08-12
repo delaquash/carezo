@@ -172,9 +172,3 @@ type DriverDocumentUploadRequest struct {
 	NIN string `form:"nin" binding:"required,len=11"` // Nigerian NIN is 11 digits
 }
 
-type DriverAuthResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	User         *User  `json:"user"`
-	Driver       *Driver `json:"driver"`
-}
