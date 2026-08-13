@@ -141,14 +141,6 @@ type SearchDriversRequest struct {
 	PerPage int `form:"per_page" binding:"min=1,max=100"`
 }
 
-type VerifyDriverOTPRequest struct {
-	Email string `json:"email" binding:"required,email"`
-	OTP   string `json:"otp" binding:"required,len=6"`
-}
-
-type ResendDriverOTPRequest struct {
-	Email string `json:"email" binding:"required,email"`
-}
 
 // DriverListResponse - Response with pagination
 type DriverListResponse struct {
