@@ -289,3 +289,30 @@ func (app *TestApp) MakeRawRequest(method, url string, rawBody []byte, headers m
 	app.Router.ServeHTTP(w, req)
 	return w
 }
+
+func (app *TestApp) MakeMultipartRequest(method, url string, fields map[string]string, files map[string][]byte, token string) *httptest.ResponseRecorder {
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+
+	// Add form fields
+	for key, value := range fields {
+		 writer.WriteField(key, value)
+	}
+
+	for fieldName, fileContent := range files {
+		part, _ := writer.CreateFormFile(fieldName, fieldName+".jpg")
+		part.Write(fileContent)
+	}
+	
+	writer.Close()
+
+	req := httptest.NewRequest(method, url, &buf)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	w := httptest.NewRecorder()
+	app.Router.ServeHTTP(w, req)
+	return w
+}

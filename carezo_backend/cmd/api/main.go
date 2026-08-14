@@ -114,14 +114,14 @@ func main() {
 		{
 			drivers.POST("/register", driverHandler.RegisterDriver)
 			drivers.GET("", driverHandler.ListAllDrivers)
-			drivers.GET("/driver/me", driverHandler.GetMyDriverProfile)
+			drivers.GET("/me", driverHandler.GetMyDriverProfile)
 			drivers.GET("/search", driverHandler.SearchDrivers)
-			drivers.GET("/:id", driverHandler.GetDriver)
+			drivers.GET("/:id/getdriver", driverHandler.GetDriver)
 			drivers.PUT("/:id", driverHandler.UpdateDriver)
 			drivers.GET("/:id/reviews", driverHandler.GetDriverReviews)
-			drivers.PUT("/driver/complete-profile", driverHandler.CompleteDriverProfile)
-			drivers.POST("/driver/documents", driverHandler.UploadDriverDocuments)
-			drivers.POST("/driver/bank-details", driverHandler.SubmitBankDetails)
+			drivers.PUT("/complete-profile", driverHandler.CompleteDriverProfile)
+			drivers.POST("/documents", driverHandler.UploadDriverDocuments)
+			drivers.POST("/bank-details", driverHandler.SubmitBankDetails)
 		}
 
 		payment := api.Group("/payments")
