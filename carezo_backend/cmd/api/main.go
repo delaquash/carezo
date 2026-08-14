@@ -114,6 +114,7 @@ func main() {
 		{
 			drivers.POST("/register", driverHandler.RegisterDriver)
 			drivers.GET("", driverHandler.ListAllDrivers)
+			drivers.GET("/driver/me", driverHandler.GetMyDriverProfile)
 			drivers.GET("/search", driverHandler.SearchDrivers)
 			drivers.GET("/:id", driverHandler.GetDriver)
 			drivers.PUT("/:id", driverHandler.UpdateDriver)
