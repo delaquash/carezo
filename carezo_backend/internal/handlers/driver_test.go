@@ -1,4 +1,4 @@
-package handlers
+package handlers_test
 
 import (
 	"context"
@@ -91,13 +91,12 @@ func TestDriverOnboardingFlow_ApprovalPath(t *testing.T) {
 	completeData := completeResp["data"].(map[string]interface{})
 	assert.Equal(t, "pending_documents", completeData["verification_status"])
 
-
 	// Upload Document:- not real document
 	w = app.MakeMultipartRequest(
 		"POST", uploadDocumentURL,
 		map[string]string{"nin": "1234567890"},
 		map[string][]byte{
-			"nin_document":  []byte("fake-nin-image-bytes"),
+			"nin_document":     []byte("fake-nin-image-bytes"),
 			"license_document": []byte("fake-license-image-bytes"),
 		},
 		driverToken,
@@ -107,7 +106,6 @@ func TestDriverOnboardingFlow_ApprovalPath(t *testing.T) {
 	uploadResp := testhelpers.ParseResponse(w)
 	uploadData := uploadResp["data"].(map[string]interface{})
 	assert.Equal(t, "pending_review", uploadData["verification_status"])
-
 
 	// Admin approves
 	adminToken := loginAsTestAdmin(t, app, "driver_review_admin@carezo.com", "Test123!@#")
@@ -130,12 +128,11 @@ func TestDriverOnboardingFlow_ApprovalPath(t *testing.T) {
 	w = app.MakeRequest("POST", submitBankDetailsURL, bankBody, driverToken)
 	assert.Equal(t, http.StatusOK, w.Code, "bank details submission failed: %s", w.Body.String())
 
-	t.Logf("Full approved driver onboarding flow passed: register → login-blocked-pre-verify → "+
-		"verify (shared endpoint) → login → complete profile → upload documents → "+
+	t.Logf("Full approved driver onboarding flow passed: register → login-blocked-pre-verify → " +
+		"verify (shared endpoint) → login → complete profile → upload documents → " +
 		"admin approved → bank details submitted")
 
 }
-
 
 func TestDriverOnboardingFlow_RejectedPath(t *testing.T) {
 	app := testhelpers.SetUpTestApp(t)
@@ -163,7 +160,7 @@ func TestDriverOnboardingFlow_RejectedPath(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 	driverToken := testhelpers.ParseResponse(w)["data"].(map[string]interface{})["access_token"].(string)
 
-		w = app.MakeRequest("PUT", completeProfileURL, map[string]interface{}{
+	w = app.MakeRequest("PUT", completeProfileURL, map[string]interface{}{
 		"age": 30, "gender": "female", "state": "Abuja", "nationality": "Nigerian",
 		"complexion": "fair", "height": 165, "license_number": "ABJDRV-00456",
 		"license_expiry_date": "2029-06-01", "years_of_experience": 3,
@@ -176,8 +173,31 @@ func TestDriverOnboardingFlow_RejectedPath(t *testing.T) {
 		driverToken)
 	require.Equal(t, http.StatusOK, w.Code, "upload failed: %s", w.Body.String())
 
-
 	// reject without a reason must be blocked
 	adminToken := loginAsTestAdmin(t, app, "driver_reject_admin@carezo.com", "Test123!@#")
 	reviewURL := fmt.Sprintf(reviewApplicationURLFmt, driverID)
+
+	w = app.MakeRequest("POST", reviewURL, map[string]interface{}{"approved": false}, adminToken)
+	assert.Equal(t, http.StatusBadRequest, w.Code,
+		"rejection without a reason should be blocked, got: %s", w.Body.String())
+
+	// rreject without a reason should succeed
+	w = app.MakeRequest("POST", reviewURL, map[string]interface{}{
+		"approved":         false,
+		"rejection_reason": "License document image was unreachable",
+	}, adminToken)
+	require.Equal(t, http.StatusOK, w.Code, "rejection failed: %s", w.Body.String())
+	rejectData := testhelpers.ParseResponse(w)["data"].(map[string]interface{})
+	assert.Equal(t, "rejected", rejectData["verification_status"])
+
+	// when rejected driver tries to submit bank details
+	w = app.MakeRequest("POST", submitBankDetailsURL, map[string]interface{}{
+		"bank_account_name": "Ada Obi", "bank_account_number": "9876543210", "bank_name": "Zenith Bank",
+	}, driverToken)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code,
+		"rejected driver should not be able to submit bank details, got: %s", w.Body.String())
+	t.Logf("Rejected driver flow passed: reject-without-reason blocked → " +
+		"reject-with-reason succeeded → bank details correctly blocked post-rejection")
+
 }
