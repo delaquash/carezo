@@ -371,7 +371,7 @@ func (s *AuthService) GoogleSignIn(req *models.GoogleSignInRequest) (*models.Aut
 			err = database.DB.Get(&user, `
 				INSERT INTO users (id, email, password_hash, first_name, last_name,
 				role, status, email_verified)
-				VALUES  ($1, $2, $3, $4, 'user', 'active', true)
+				VALUES  ($1, $2, $3, $4, $5, 'user', 'active', true)
 				RETURNING * 
 			`, userID, email, firstName, lastName)
 
