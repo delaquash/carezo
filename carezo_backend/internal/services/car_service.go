@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	//
 	"github.com/delaquash/carezo/internal/database"
 	models "github.com/delaquash/carezo/internal/model"
 	"github.com/google/uuid"
@@ -45,14 +44,19 @@ func (s *CarService) CreateCar(req *models.CreateCarRequest) (*models.Car, error
 		return nil, fmt.Errorf("Failed to marshal hourly rate: %w", err)
 	}
 
+	imagesJSON, err := json.Marshal(req.Images)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal images: %w", err)
+	}
+
 	carID := uuid.New().String()
 	query = `
 		INSERT INTO cars (
 			id, model, year, color, license_plate, engine_output, transmission, fuel_type,
 			seating_capacity, maximum_speed, mileage, driver_name, driver_number, driver_miles, hourly_rate,
-			caution_fee, features, images, is_available, status, current_location
+			caution_fee, features, images, description, is_available, status, current_location
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, '[]'::jsonb, true, 'active', $18
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, true, 'active', $20
 		)
 		RETURNING *
 	`
@@ -64,7 +68,7 @@ func (s *CarService) CreateCar(req *models.CreateCarRequest) (*models.Car, error
 		req.EngineOutput, req.Transmission, req.FuelType, req.SeatingCapacity,
 		req.MaximumSpeed, req.Mileage, req.DriverName, req.DriverNumber,
 		req.DriverMiles, hourlyRateJSON, req.CautionFee, convertFeaturesToJson,
-		req.CurrentLocation,
+		imagesJSON, req.Description, req.CurrentLocation,
 	)
 
 	if err != nil {

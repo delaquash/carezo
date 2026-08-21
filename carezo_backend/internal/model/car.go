@@ -69,6 +69,7 @@ type CreateCarRequest struct {
 	Features        []string   `json:"features,omitempty"`
 	CurrentLocation *string    `json:"current_location,omitempty"`
 	Images          []string   `json:"images,omitempty"`
+	Description     *string    `json:"description,omitempty"`
 
 	ImagePublicIDs []string `json:"image_public_ids,omitempty"`
 	// HourlyRate      map[string]interface{} `json:"hourly_rate"`
