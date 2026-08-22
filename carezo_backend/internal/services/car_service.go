@@ -499,25 +499,22 @@ func (s *CarService) GetPopularCars(page, perPage int) ([]*models.Car, int, erro
 	var cars []*models.Car
 
 	// sql query
-
 	err = database.DB.Select(&cars, `
-		SELECT 
-			c.*,
-			COALESCE(b.booking_count, 0) AS total_bookings
-		FROM cars c
-		LEFT JOIN (
-			SELECT car_id, COUNT(*) AS booking_count
-			FROM bookings
-			WHERE status NOT IN('cancelled')
-			GROUP BY car_id
-		) b ON b.car_id = c.id
-		 WHERE c.is_available = true
-		 	AND c.deleted_at IS NULL
-		ORDER BY (
-			COALESCE(b.booking_count, 0) * 0.4
-		) DESC
-		 LIMIT $1 OFFSET $2
-	`, perPage, offset)
+    SELECT c.*
+    FROM cars c
+    LEFT JOIN (
+        SELECT car_id, COUNT(*) AS booking_count
+        FROM bookings
+        WHERE status NOT IN('cancelled')
+        GROUP BY car_id
+    ) b ON b.car_id = c.id
+     WHERE c.is_available = true
+        AND c.deleted_at IS NULL
+    ORDER BY (
+        COALESCE(b.booking_count, 0) * 0.4
+    ) DESC
+     LIMIT $1 OFFSET $2
+`, perPage, offset)
 	// return error if failed to fetch
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to fetch popular cars: %w", err)
