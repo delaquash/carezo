@@ -20,29 +20,37 @@ func NewReviewService() *ReviewService {
 
 // User create review after booking
 func (r *ReviewService)  CreateReview(userID string, req *models.CreateReviewRequest)(*models.Review, error) {
-	// images and public images must be parallet
-	if len(req.Images) != len(req.ImagePublicIDs) {
-		return nil, errors.New("images and images_public_ids must have the same number of items")
+	// tx:- the review insert and recalculations must succeed together or not at all
+	tx, err := database.DB.Beginx()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
 	}
 
-	// enforce limit of 3 photos for reviews
-	if len(req.Images) > 3 {
-		return nil, errors.New("minimum of 3 images allowed per review")
-	}
+	defer tx.Rollback()
+	// images and public images must be parallet
+	// if len(req.Images) != len(req.ImagePublicIDs) {
+	// 	return nil, errors.New("images and images_public_ids must have the same number of items")
+	// }
+
+	// // enforce limit of 3 photos for reviews
+	// if len(req.Images) > 3 {
+	// 	return nil, errors.New("minimum of 3 images allowed per review")
+	// }
 	// check if booking exist and belongs to a driver
 	var booking struct {
 		DriverID string `db:"driver_id"`
 		Status   string `db:"status"`
+		CarID    string `db:"car_id"`
 	}
 
-	query := `SELECT driver_id, status FROM bookings WHERE id = $1 AND user_id = $2`
-	err := database.DB.Get(&booking, query, userID, req.BookingID)
+	query := `SELECT driver_id, car_id status FROM bookings WHERE id = $1 AND user_id = $2`
+	err := database.DB.Get(&booking, query, req.BookingID, userID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("Booking not found or doesnt belong to you")
 		}
-		return nil, fmt.Errorf("Database error: %w", err) // %w preserves the original error for unwrapping
+		return nil, fmt.Errorf("Database error: %w", err) 
 	}
 
 	// check if booking is completed and only completed trips can be reviewed — stops reviews before the ride happened
@@ -53,7 +61,7 @@ func (r *ReviewService)  CreateReview(userID string, req *models.CreateReviewReq
 	// check if review is exist for this booking before to avoid duplicate review
 	var exists bool
 	query = `SELECT EXISTS(SELECT 1 FROM reviews WHERE booking_id = $1)`
-	err = database.DB.Get(&exists, query, req.BookingID)
+	err = tx.Get(&exists, query, req.BookingID)
 	if err != nil {
 		return nil, fmt.Errorf("database error: %w", err)
 	}
@@ -62,64 +70,66 @@ func (r *ReviewService)  CreateReview(userID string, req *models.CreateReviewReq
 		return nil, errors.New("you have already reviewed this booking")
 	}
 	// convert the GO []string of image URLs into JSOn bytes for the JSONB column
-	imagesJSON, err := json.Marshal(req.Images)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal image publics IDs: %w", err)
-	}
+	// imagesJSON, err := json.Marshal(req.Images)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to marshal image publics IDs: %w", err)
+	// }
 
-	// same conversion for the public_ids array — stored alongside images
-	imagePublicIDsJSON, err := json.Marshal(req.ImagePublicIDs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal image public IDs: %w", err)
-	}
+	// // same conversion for the public_ids array — stored alongside images
+	// imagePublicIDsJSON, err := json.Marshal(req.ImagePublicIDs)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to marshal image public IDs: %w", err)
+	// }
 
 	// create review
 	reviewID := uuid.New().String()  // generate a fresh UUID for the new review row
 	query = `
 		INSERT INTO reviews (
-			id, booking_id, user_id, driver_id, rating,
+			id, booking_id, user_id, driver_id, car_id, rating,
 			punctuality_rating, professionalism_rating, vehicle_condition_rating,
 			title, comment, status
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'published'
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'published'
 		)
 			RETURNING *
 	`
 
 	var review models.Review  // will be filled by RETURNING * below
 
-	// INSERT the review and immediately get the full row back via RETURNING —
-	// columns are listed explicitly (not RETURNING *) so a schema mismatch
-	// doesn't silently break the scan
-	err = database.DB.Get(&review, `
-		INSERT INTO reviews (
-			id, booking_id, user_id, driver_id,
-			rating, punctuality_rating, professionalism_rating,
-			vehicle_condition_rating, title, comment,
-			images, image_public_ids, status
-		) VALUES (
-			$1, $2, $3, $4,
-			$5, $6, $7,
-			$8, $9, $10,
-			$11, $12, 'published'
-		)
-		RETURNING
-			id, booking_id, user_id, driver_id,
-			rating, punctuality_rating, professionalism_rating,
-			vehicle_condition_rating, title, comment,
-			images, image_public_ids, status,
-			created_at, updated_at
-	`,
-		reviewID, req.BookingID, userID, booking.DriverID,
-		req.Rating, req.PunctualityRating, req.ProfessionalismRating,
-		req.VehicleConditionRating, req.Title, req.Comment,
-		imagesJSON, imagePublicIDsJSON, // the two JSONB arrays go in last
+	err = tx.Get(&review, query,
+		reviewID, req.BookingID, userID, booking.DriverID, booking.CarID,
+		req.Rating, req.PunctualityRating, req.ProfessionalismRating, req.VehicleConditionRating,
+		req.Title, req.Comment,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create review: %w", err)
+		return nil, fmt.Errorf("Failed to create reviews: %w", err)
 	}
 
-	return &review, nil // hand back the fully-populated review struct
+	// this is the driver rating
+	_, err = tx.Exec(`
+		UPDATE drivers
+		SET average_rating = (SELECT COALESCE(AVG(rating), 0) FROM reviews WHERE driver_id = $1 AND status = 'published'),
+			total_reviews = (SELECT COUNT(*) FROM reviews WHERE driver_id = $1 AND status = 'published')
+		WHERE id = $1
+		`, booking.DriverID)
+
+
+	// car rating
+	_, err = tx.Exec(`
+		UPDATE cars
+		SET average_rating = (SELECT COALESCE(AVG(vehicle_condition_rating), 0) FROM reviews WHERE car_id = $1 AND status = 'published'),
+			total_reviews  = (SELECT COUNT(*) FROM reviews WHERE car_id = $1 AND status = 'published')
+		WHERE id = $1
+		`, booking.CarID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update car rating: %w", err)
+		}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit review: %w", err)
+	}
+
+	return &review, nil
 }
 
 // EditReviewImages — add new photos and/or remove specific existing ones in one call
@@ -156,7 +166,7 @@ func (r *ReviewService) EditReviewImages (reviewID string, requesterID string, i
 		json.Unmarshal([]byte(review.Images),  &currentImages)
 	}
 	if len(review.ImagePublicIDs) > 0 {
-		json.Unmarshal([]byte(review.ImagePublicIDs), &currentPublicIDs)
+		json.Unmarshal([]b// Pointer/nullable — existing reviews created before this migration haveyte(review.ImagePublicIDs), &currentPublicIDs)
 	}
 
 	// build a lookup SET of public_ids to remove — map gives O(1) "is this in
@@ -223,7 +233,7 @@ func (r *ReviewService) EditReviewImages (reviewID string, requesterID string, i
 func (r *ReviewService) GetReviewByID(reviewID string)(*models.Review, error) {
 	var review models.Review
 	query := `SELECT * FROM reviews WHERE id = $1`
-	err := database.DB.Get(&review,query, reviewID)
+	err := database.DB.Get(&review, query, reviewID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {

@@ -37,6 +37,8 @@ type Car struct {
 	IsAvailable     bool    `json:"is_available" db:"is_available"`
 	Status          string  `json:"status" db:"status"`
 	CurrentLocation *string `json:"current_location,omitempty" db:"current_location"`
+	AverageRating   float64 `json:"average_rating" db:"average_rating"`
+	TotalReviews    int     `json:"total_reviews" db:"total_reviews"`
 
 	CreatedAt time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`

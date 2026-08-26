@@ -19,6 +19,7 @@ type Review struct {
 	ImagePublicIDs         JSONB   `json:"image_public_ids" db:"image_public_ids"`
 	Title                  *string `json:"title,omitempty" db:"title"`
 	Comment                *string `json:"comment,omitempty" db:"comment"`
+	CarID                  *string `json:"car_id,omitempty" db:"car_id"`
 
 	Status string `json:"status" db:"status"`
 
@@ -27,17 +28,16 @@ type Review struct {
 }
 
 type CreateReviewRequest struct {
-	BookingID              string  `json:"booking_id" binding:"required"`
-	Rating                 int     `json:"rating" binding:"required,min=1,max=5"`
-	PunctualityRating      *int    `json:"punctuality_rating,omitempty"`
-	ProfessionalismRating  *int    `json:"professionalism_rating,omitempty"`
-	VehicleConditionRating *int    `json:"vehicle_condition_rating,omitempty"`
-	Title                  *string `json:"title,omitempty"`
-	Comment                *string `json:"comment,omitempty"`
-	Images                 JSONB   `json:"images" db:"images"`
-	ImagePublicIDs []string `json:"image_public_ids,omitempty"`
+	BookingID              string   `json:"booking_id" binding:"required"`
+	Rating                 int      `json:"rating" binding:"required,min=1,max=5"`
+	PunctualityRating      *int     `json:"punctuality_rating,omitempty"`
+	ProfessionalismRating  *int     `json:"professionalism_rating,omitempty"`
+	VehicleConditionRating *int     `json:"vehicle_condition_rating,omitempty"`
+	Title                  *string  `json:"title,omitempty"`
+	Comment                *string  `json:"comment,omitempty"`
+	Images                 JSONB    `json:"images" db:"images"`
+	ImagePublicIDs         []string `json:"image_public_ids,omitempty"`
 }
 
 type GetReview struct {
-	
 }

@@ -27,27 +27,26 @@ CREATE TABLE IF NOT EXISTS reviews (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ✅ Indexes
+
 CREATE INDEX idx_reviews_driver ON reviews(driver_id);
 CREATE INDEX idx_reviews_user ON reviews(user_id);
 CREATE INDEX idx_reviews_booking ON reviews(booking_id);
 
--- Optimized index for real queries
+
 CREATE INDEX idx_reviews_driver_published
 ON reviews(driver_id)
 WHERE status = 'published';
 
--- Unique review per booking
+
 CREATE UNIQUE INDEX idx_reviews_booking_unique
 ON reviews(booking_id);
 
--- ✅ Trigger for updated_at
+
 CREATE TRIGGER update_reviews_updated_at
 BEFORE UPDATE ON reviews
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
--- ✅ Driver rating update function (fixed)
 CREATE OR REPLACE FUNCTION update_driver_rating()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -73,7 +72,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- ✅ Trigger (handles all cases)
+
 CREATE TRIGGER trigger_update_driver_rating
 AFTER INSERT OR UPDATE OR DELETE ON reviews
 FOR EACH ROW
