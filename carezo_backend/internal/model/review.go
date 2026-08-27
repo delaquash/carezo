@@ -41,3 +41,12 @@ type CreateReviewRequest struct {
 
 type GetReview struct {
 }
+
+type UpdateReviewRequest struct {
+	Rating                  *int    `json:"rating,omitempty" binding:"omitempty,min=1,max=5"`
+	PunctualityRating       *int    `json:"punctuality_rating,omitempty" binding:"omitempty,min=1,max=5"`
+	ProfessionalismRating   *int    `json:"professionalism_rating,omitempty" binding:"omitempty,min=1,max=5"`
+	VehicleConditionRating  *int    `json:"vehicle_condition_rating,omitempty" binding:"omitempty,min=1,max=5"`
+	Title                   *string `json:"title,omitempty"`
+	Comment                 *string `json:"comment,omitempty"`
+}
