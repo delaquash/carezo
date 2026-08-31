@@ -103,6 +103,21 @@ func (h *ReviewHandler) GetReviewByID(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Review retrieved successfully", review)
 }
 
+// review_handler.go
+func (h *ReviewHandler) GetCarReviews(c *gin.Context) {
+	carID := c.Param("id")
+	reviews, err := h.reviewService.GetCarReviews(carID)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	response.Success(c, http.StatusOK, "Reviews retrieved successfully", gin.H{
+		"car_id":  carID,
+		"reviews": reviews,
+		"total":   len(reviews),
+	})
+}
+
 // EditReviewImage — assumed to already exist correctly on this handler
 // per your earlier route logs; not rewritten here since I haven't seen
 // it and it wasn't flagged as broken.

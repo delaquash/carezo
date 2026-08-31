@@ -298,6 +298,22 @@ func (r *ReviewService) GetReviewByID(reviewID string) (*models.Review, error) {
 	return &review, nil
 }
 
+
+// review_service.go
+func (r *ReviewService) GetCarReviews(carID string) ([]*models.Review, error) {
+	var reviews []*models.Review
+	query := `
+		SELECT * FROM reviews
+		WHERE car_id = $1 AND status = 'published'
+		ORDER BY created_at DESC
+	`
+	err := database.DB.Select(&reviews, query, carID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch car reviews: %w", err)
+	}
+	return reviews, nil
+}
+
 // --- shared helpers, used by both CreateReview and UpdateReview so the
 // recalculation logic exists in exactly one place, not duplicated twice
 // with room to drift apart.
