@@ -190,7 +190,8 @@ func main() {
 		{
 			reviews.POST("", driverHandler.CreateReview)
 			reviews.GET("/:id", reviewHandler.GetReviewByID)
-			reviews.PUT("/:id/images", reviewHandler.EditReviewImage)
+			// reviews.PUT("/:id/images", reviewHandler.EditReviewImages)
+			reviews.GET("/:id/reviews", reviewHandler.GetCarReviews)
 		}
 
 		// Admin routes

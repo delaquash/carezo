@@ -259,7 +259,7 @@ func (h *DriverHandler) CreateReview(c *gin.Context) {
 		return
 	}
 
-	review, err := h.reviewServices.CreateReview(userID, &req) // ownership + 3-image-max checks happen here
+	review, err := h.reviewServices.CreateReview(userID, &req, []string{}, []string{}) // ownership + 3-image-max checks happen here
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
