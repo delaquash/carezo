@@ -1,0 +1,410 @@
+[
+  {
+    "model": "Toyota Camry 2020",
+    "year": 2020,
+    "color": "Black",
+    "license_plate": "KJA 482 MC",
+    "transmission": "automatic",
+    "fuel_type": "petrol",
+    "seating_capacity": 5,
+    "mileage": 48500,
+    "caution_fee": 50000,
+    "hourly_rate": {
+      "weekday": 7000,
+      "weekend": 8500,
+      "holiday": 10000
+    },
+    "current_location": "Lagos",
+    "description": "A comfortable executive sedan with a refined cabin, smooth automatic transmission and dependable performance for city and intercity trips.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324339/Cars/New_toyota_camry_dvgxlr.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/New_toyota_camry_dvgxlr"
+    ]
+  },
+  {
+    "model": "Toyota Hilux",
+    "year": 2021,
+    "color": "White",
+    "license_plate": "ABC 741 KL",
+    "transmission": "automatic",
+    "fuel_type": "diesel",
+    "seating_capacity": 5,
+    "mileage": 61200,
+    "caution_fee": 80000,
+    "hourly_rate": {
+      "weekday": 9000,
+      "weekend": 11000,
+      "holiday": 13000
+    },
+    "current_location": "Lagos",
+    "description": "A rugged double-cab pickup built for Nigerian roads, combining strong utility with a comfortable five-seat cabin.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324340/Cars/hilux_qbgeof.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/hilux_qbgeof"
+    ]
+  },
+  {
+    "model": "Lexus GX 470",
+    "year": 2012,
+    "color": "Black",
+    "license_plate": "ABJ 328 RD",
+    "transmission": "automatic",
+    "fuel_type": "petrol",
+    "seating_capacity": 7,
+    "mileage": 118400,
+    "caution_fee": 100000,
+    "hourly_rate": {
+      "weekday": 10000,
+      "weekend": 12000,
+      "holiday": 14000
+    },
+    "current_location": "Abuja",
+    "description": "A durable luxury SUV with four-wheel drive, a spacious cabin and proven V8 power for both city driving and rougher terrain.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324337/Cars/Lexus_GX_2025_lpr0x4.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/Lexus_GX_2025_lpr0x4"
+    ]
+  },
+  {
+    "model": "Lexus ES 350",
+    "year": 2021,
+    "color": "Silver",
+    "license_plate": "LAG 615 KT",
+    "transmission": "automatic",
+    "fuel_type": "petrol",
+    "seating_capacity": 5,
+    "mileage": 42600,
+    "caution_fee": 70000,
+    "hourly_rate": {
+      "weekday": 9000,
+      "weekend": 10500,
+      "holiday": 12500
+    },
+    "current_location": "Lagos",
+    "description": "A quiet luxury sedan focused on comfort, smooth acceleration and a premium interior for executive journeys.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324337/Cars/Lexus_ES_350_ntzzyf.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/Lexus_ES_350_ntzzyf"
+    ]
+  },
+  {
+    "model": "Lexus GX 550",
+    "year": 2025,
+    "color": "White",
+    "license_plate": "ABJ 904 TX",
+    "transmission": "automatic",
+    "fuel_type": "petrol",
+    "seating_capacity": 7,
+    "mileage": 6800,
+    "caution_fee": 150000,
+    "hourly_rate": {
+      "weekday": 18000,
+      "weekend": 22000,
+      "holiday": 25000
+    },
+    "current_location": "Abuja",
+    "description": "A modern luxury SUV combining serious off-road capability with a premium cabin and three-row practicality.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324338/Cars/Lexus_2012_SUV_udemb9.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/Lexus_2012_SUV_udemb9"
+    ]
+  },
+  {
+    "model": "Lexus LX 600",
+    "year": 2024,
+    "color": "Black",
+    "license_plate": "KJA 219 PF",
+    "transmission": "automatic",
+    "fuel_type": "petrol",
+    "seating_capacity": 7,
+    "mileage": 12400,
+    "caution_fee": 200000,
+    "hourly_rate": {
+      "weekday": 25000,
+      "weekend": 30000,
+      "holiday": 35000
+    },
+    "current_location": "Lagos",
+    "description": "A flagship luxury SUV with twin-turbo V6 power, a commanding driving position and exceptional comfort for premium travel.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324337/Cars/Lexus_LX600_ww8mey.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/Lexus_LX600_ww8mey"
+    ]
+  },
+  {
+    "model": "Lexus RX 350",
+    "year": 2022,
+    "color": "Grey",
+    "license_plate": "LAG 731 QZ",
+    "transmission": "automatic",
+    "fuel_type": "petrol",
+    "seating_capacity": 5,
+    "mileage": 38900,
+    "caution_fee": 90000,
+    "hourly_rate": {
+      "weekday": 12000,
+      "weekend": 14000,
+      "holiday": 16000
+    },
+    "current_location": "Lagos",
+    "description": "A refined midsize SUV offering a comfortable ride, premium interior and practical space for everyday city travel.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324337/Cars/Lexus_ES_350_ntzzyf.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/Lexus_ES_350_ntzzyf"
+    ]
+  },
+  {
+    "model": "Mercedes-Benz C300",
+    "year": 2022,
+    "color": "Black",
+    "license_plate": "KJA 548 RN",
+    "transmission": "automatic",
+    "fuel_type": "petrol",
+    "seating_capacity": 5,
+    "mileage": 31700,
+    "caution_fee": 100000,
+    "hourly_rate": {
+      "weekday": 14000,
+      "weekend": 16500,
+      "holiday": 19000
+    },
+    "current_location": "Lagos",
+    "description": "A compact executive sedan with a sophisticated cabin, responsive handling and a polished premium driving experience.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324338/Cars/Mercedes_Bez_S-Class_ba9qx0.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/Mercedes_Bez_S-Class_ba9qx0"
+    ]
+  },
+  {
+    "model": "Mercedes-Benz G-Class G 550",
+    "year": 2023,
+    "color": "Black",
+    "license_plate": "ABJ 615 MG",
+    "transmission": "automatic",
+    "fuel_type": "petrol",
+    "seating_capacity": 5,
+    "mileage": 21800,
+    "caution_fee": 200000,
+    "hourly_rate": {
+      "weekday": 30000,
+      "weekend": 35000,
+      "holiday": 40000
+    },
+    "current_location": "Abuja",
+    "description": "An iconic luxury SUV with a distinctive boxy design, commanding road presence and serious off-road capability.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324337/Cars/Mercedes_Bez_G-Class.jpeg_zbeuxk.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/Mercedes_Bez_G-Class.jpeg_zbeuxk"
+    ]
+  },
+  {
+    "model": "Mercedes-Benz GLE 350",
+    "year": 2022,
+    "color": "White",
+    "license_plate": "LAG 842 JW",
+    "transmission": "automatic",
+    "fuel_type": "petrol",
+    "seating_capacity": 5,
+    "mileage": 35400,
+    "caution_fee": 120000,
+    "hourly_rate": {
+      "weekday": 18000,
+      "weekend": 21000,
+      "holiday": 24000
+    },
+    "current_location": "Lagos",
+    "description": "A spacious premium SUV with a comfortable cabin, smooth power delivery and excellent versatility for city and highway trips.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324339/Cars/Mercedes_Bez_GLE_qm99su.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/Mercedes_Bez_GLE_qm99su"
+    ]
+  },
+  {
+    "model": "Mercedes-Benz S 500",
+    "year": 2022,
+    "color": "Obsidian Black",
+    "license_plate": "ABJ 392 LV",
+    "transmission": "automatic",
+    "fuel_type": "petrol",
+    "seating_capacity": 5,
+    "mileage": 28600,
+    "caution_fee": 200000,
+    "hourly_rate": {
+      "weekday": 28000,
+      "weekend": 33000,
+      "holiday": 38000
+    },
+    "current_location": "Abuja",
+    "description": "A flagship executive sedan designed around comfort, quietness and premium technology for high-end journeys.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324338/Cars/Mercedes_Bez_S-Class_ba9qx0.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/Mercedes_Bez_S-Class_ba9qx0"
+    ]
+  },
+  {
+    "model": "Toyota Camry",
+    "year": 2025,
+    "color": "Pearl White/Black",
+    "license_plate": "LAG 506 XE",
+    "transmission": "automatic",
+    "fuel_type": "hybrid",
+    "seating_capacity": 5,
+    "mileage": 5200,
+    "caution_fee": 90000,
+    "hourly_rate": {
+      "weekday": 12000,
+      "weekend": 14500,
+      "holiday": 17000
+    },
+    "current_location": "Lagos",
+    "description": "A modern Camry with a smooth hybrid powertrain, quiet cabin and efficient performance suited to premium city travel.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324337/Cars/toyota_camry_gyyjkl.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/toyota_camry_gyyjkl"
+    ]
+  },
+  {
+    "model": "Toyota Camry",
+    "year": 2022,
+    "color": "Dark Grey",
+    "license_plate": "KJA 274 NC",
+    "transmission": "automatic",
+    "fuel_type": "petrol",
+    "seating_capacity": 5,
+    "mileage": 39700,
+    "caution_fee": 60000,
+    "hourly_rate": {
+      "weekday": 8000,
+      "weekend": 9500,
+      "holiday": 11000
+    },
+    "current_location": "Lagos",
+    "description": "A dependable midsize sedan with a spacious cabin, smooth ride and practical performance for everyday rentals.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324339/Cars/Camry_2020_bcoevo.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/Camry_2020_bcoevo"
+    ]
+  },
+  {
+    "model": "Toyota Highlander",
+    "year": 2021,
+    "color": "White",
+    "license_plate": "ABJ 831 KP",
+    "transmission": "automatic",
+    "fuel_type": "petrol",
+    "seating_capacity": 7,
+    "mileage": 44200,
+    "caution_fee": 90000,
+    "hourly_rate": {
+      "weekday": 12000,
+      "weekend": 14500,
+      "holiday": 17000
+    },
+    "current_location": "Abuja",
+    "description": "A spacious family SUV with three-row seating, comfortable suspension and ample room for passengers and luggage.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324338/Cars/toyota_highlander_t39dq3.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/toyota_highlander_t39dq3"
+    ]
+  },
+  {
+    "model": "Jeep Wrangler",
+    "year": 2024,
+    "color": "Black",
+    "license_plate": "LAG 413 XR",
+    "transmission": "automatic",
+    "fuel_type": "petrol",
+    "seating_capacity": 5,
+    "mileage": 9200,
+    "caution_fee": 120000,
+    "hourly_rate": {
+      "weekday": 16000,
+      "weekend": 19000,
+      "holiday": 22000
+    },
+    "current_location": "Lagos",
+    "description": "A rugged four-wheel-drive SUV with removable-roof character, high ground clearance and strong off-road capability.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324337/Cars/Lexus_LX600_ww8mey.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/Lexus_LX600_ww8mey"
+    ]
+  },
+  {
+    "model": "Toyota RAV4",
+    "year": 2021,
+    "color": "Silver",
+    "license_plate": "KJA 627 WM",
+    "transmission": "automatic",
+    "fuel_type": "petrol",
+    "seating_capacity": 5,
+    "mileage": 41600,
+    "caution_fee": 70000,
+    "hourly_rate": {
+      "weekday": 10000,
+      "weekend": 12000,
+      "holiday": 14000
+    },
+    "current_location": "Lagos",
+    "description": "A practical compact SUV with good road manners, useful cargo space and comfortable seating for everyday trips.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324340/Cars/toyota_jeep_y0aze5.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/toyota_jeep_y0aze5"
+    ]
+  },
+  {
+    "model": "Toyota Yaris",
+    "year": 2020,
+    "color": "Red",
+    "license_plate": "LAG 295 HT",
+    "transmission": "automatic",
+    "fuel_type": "petrol",
+    "seating_capacity": 5,
+    "mileage": 52800,
+    "caution_fee": 40000,
+    "hourly_rate": {
+      "weekday": 5500,
+      "weekend": 6500,
+      "holiday": 7500
+    },
+    "current_location": "Lagos",
+    "description": "A compact and economical hatchback that is easy to manoeuvre through busy Lagos streets and suited to short city trips.",
+    "images": [
+      "https://res.cloudinary.com/delaquarsh/image/upload/v1787324337/Cars/toyota_yaris_zll4kj.jpg"
+    ],
+    "image_public_ids": [
+      "Cars/toyota_yaris_zll4kj"
+    ]
+  }
+]
