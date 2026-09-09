@@ -7,6 +7,7 @@ import (
 
 	"github.com/delaquash/carezo/internal/database"
 	models "github.com/delaquash/carezo/internal/model"
+	"github.com/jmoiron/sqlx"
 )
 
 type NotificationService struct{}
@@ -288,6 +289,23 @@ func (s *NotificationService) DeleteAllNotification(userID string) error {
 
 	if err != nil {
 		return fmt.Errorf("Failed to delete notifications: %w", err)
+	}
+	return nil
+}
+
+
+func (s *NotificationService) DeleteNotifications(userID string, ids []string) error {
+	query, args, err := sqlx.In(
+		`DELETE FROM notifications WHERE user_id = ? AND id IN (?)`,
+		userID, ids,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to build delete query: %w", err)
+	}
+	query = database.DB.Rebind(query)
+	_, err = database.DB.Exec(query, args...)
+	if err != nil {
+		return fmt.Errorf("failed to delete notifications: %w", err)
 	}
 	return nil
 }

@@ -36,3 +36,8 @@ type CreateNotificationRequest struct {
 	Type    string                 `json:"type"`
 	Data    map[string]interface{} `json:"data"`
 }
+
+
+type BulkDeleteNotificationsRequest struct {
+	IDs []string `json:"ids" binding:"required,min=1"`
+}
