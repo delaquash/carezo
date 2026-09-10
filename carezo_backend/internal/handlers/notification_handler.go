@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	models "github.com/delaquash/carezo/internal/model"
 	"github.com/delaquash/carezo/internal/services"
 	response "github.com/delaquash/carezo/pkg"
 	"github.com/gin-gonic/gin"
@@ -133,4 +134,21 @@ func (s *NotificationHandler) DeleteAllNotification(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "all notification deleted", nil)
+}
+
+func (h *NotificationHandler) DeleteSelectedBulkNotification(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	var req models.BulkDeleteNotificationsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request: "+err.Error())
+		return
+	}
+
+	if err := h.notificationService.DeleteNotifications(userID, req.IDs); err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to delete notifications: "+err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Notifications deleted successfully", nil)
 }

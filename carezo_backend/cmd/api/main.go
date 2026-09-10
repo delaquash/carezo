@@ -171,6 +171,7 @@ func main() {
 				notifications.PUT("/:id/read", notificationHandler.MarkOneRead)
 				notifications.DELETE("/:id", notificationHandler.DeleteNotification)
 				notifications.DELETE("", notificationHandler.DeleteAllNotification)
+				notifications.DELETE("/notifications/bulk", notificationHandler.DeleteSelectedBulkNotification)
 			}
 
 			bookings := protected.Group("/bookings")
