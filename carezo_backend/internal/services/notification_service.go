@@ -309,3 +309,4 @@ func (s *NotificationService) DeleteNotifications(userID string, ids []string) e
 	}
 	return nil
 }
+

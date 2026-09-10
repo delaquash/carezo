@@ -172,6 +172,7 @@ func main() {
 				notifications.DELETE("/:id", notificationHandler.DeleteNotification)
 				notifications.DELETE("", notificationHandler.DeleteAllNotification)
 				notifications.DELETE("/notifications/bulk", notificationHandler.DeleteSelectedBulkNotification)
+				notifications.POST("/notifications", notificationHandler.AdminCreateNotification)
 			}
 
 			bookings := protected.Group("/bookings")

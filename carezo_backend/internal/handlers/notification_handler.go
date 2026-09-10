@@ -152,3 +152,19 @@ func (h *NotificationHandler) DeleteSelectedBulkNotification(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "Notifications deleted successfully", nil)
 }
+
+// notification_handler.go — new handler
+func (h *NotificationHandler) AdminCreateNotification(c *gin.Context) {
+	var req models.CreateNotificationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request: "+err.Error())
+		return
+	}
+
+	if err := h.notificationService.CreateNotification(&req); err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusCreated, "Notification created successfully", nil)
+}
