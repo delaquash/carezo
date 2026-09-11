@@ -172,7 +172,7 @@ func main() {
 				notifications.DELETE("/:id", notificationHandler.DeleteNotification)
 				notifications.DELETE("", notificationHandler.DeleteAllNotification)
 				notifications.DELETE("/notifications/bulk", notificationHandler.DeleteSelectedBulkNotification)
-				notifications.POST("/notifications", notificationHandler.AdminCreateNotification)
+			
 			}
 
 			bookings := protected.Group("/bookings")
@@ -230,6 +230,11 @@ func main() {
 				bookings.POST("/:id/pickup", bookingHandler.MarkPickedUp)
 				bookings.POST("/:id/dropoff", bookingHandler.MarkDroppedOff)
 				bookings.POST("/:id/return", bookingHandler.MarkReturned)
+			}
+
+			notifications := admin.Group("/notifications")
+			{
+				notifications.POST("/notifications", notificationHandler.AdminCreateNotification)
 			}
 		}
 
