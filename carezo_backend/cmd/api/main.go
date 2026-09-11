@@ -234,7 +234,7 @@ func main() {
 
 			notifications := admin.Group("/notifications")
 			{
-				notifications.POST("/notifications", notificationHandler.AdminCreateNotification)
+				notifications.POST("", notificationHandler.AdminCreateNotification)
 			}
 		}
 
