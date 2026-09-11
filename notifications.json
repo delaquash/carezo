@@ -1,0 +1,44 @@
+[
+  {
+    "user_id": "8150a77c-053e-4b8c-87ed-14095f4be3ad",
+    "title": "Car Booking Successful",
+    "message": "Your car is ready! Check your email for the booking and pickup instructions. Safe travels!",
+    "type": "booking_created",
+    "data": { "booking_reference": "BK-DEMO-001" }
+  },
+  {
+    "user_id": "8150a77c-053e-4b8c-87ed-14095f4be3ad",
+    "title": "Payment Notification",
+    "message": "Your payment was processed successfully! Enjoy your ride.",
+    "type": "payment_success",
+    "data": { "amount_paid": 35000 }
+  },
+  {
+    "user_id": "8150a77c-053e-4b8c-87ed-14095f4be3ad",
+    "title": "Car Pickup/Drop-off time",
+    "message": "Pickup time confirmed! See you at 9:00 AM for your car rental. Drop-off Time Confirmed Please.",
+    "type": "vehicle_picked_up",
+    "data": {}
+  },
+  {
+    "user_id": "8150a77c-053e-4b8c-87ed-14095f4be3ad",
+    "title": "Late Return Warning",
+    "message": "Late Return Alert! Please return the car as soon as possible to avoid extra charges.",
+    "type": "late_return_warning",
+    "data": {}
+  },
+  {
+    "user_id": "8150a77c-053e-4b8c-87ed-14095f4be3ad",
+    "title": "Cancellation Notice",
+    "message": "Your Reservation Has Been Cancelled Successfully.",
+    "type": "booking_cancelled",
+    "data": { "reason": "Customer requested" }
+  },
+  {
+    "user_id": "8150a77c-053e-4b8c-87ed-14095f4be3ad",
+    "title": "Discount Notification",
+    "message": "Congratulations! You've unlocked a 10% discount on your next rental.",
+    "type": "discount",
+    "data": { "discount_percent": 10 }
+  }
+]
