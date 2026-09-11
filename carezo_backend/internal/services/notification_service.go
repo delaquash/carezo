@@ -7,6 +7,7 @@ import (
 
 	"github.com/delaquash/carezo/internal/database"
 	models "github.com/delaquash/carezo/internal/model"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -19,29 +20,31 @@ func NewNotification() *NotificationService {
 // saves a notification to the Db, this is called
 // internally after booking creation and payment notification
 
+
 func (s *NotificationService) CreateNotification(req *models.CreateNotificationRequest) error {
 	dataJSON, err := json.Marshal(req.Data)
-
 	if err != nil {
 		return fmt.Errorf("failed to marshal notification data: %w", err)
 	}
 
+	notificationID := uuid.New().String()
 	query := `
-		INSERT INTO notification(user_id, title, message, type, data)
-		VALUES($1, $2, $3, $4, $5)
+		INSERT INTO notifications(id, user_id, title, message, type, data, is_read)
+		VALUES($1, $2, $3, $4, $5, $6, false)
 	`
-
 	_, err = database.DB.Exec(query,
-		req.UserID,
-		req.Title,
-		req.Message,
-		req.Type,
+		notificationID, 
+		req.UserID, 
+		req.Title, 
+		req.Message, 
+		req.Type, 
 		dataJSON,
 	)
 
 	if err != nil {
 		return fmt.Errorf("failed to create notification: %w", err)
 	}
+	
 	return nil
 }
 
