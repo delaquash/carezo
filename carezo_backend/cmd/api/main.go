@@ -63,7 +63,7 @@ func main() {
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 	router.Use(middleware.RateLimitMiddleware(cfg))
-
+	router.Use(middleware.SecurityHeaders())
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -172,7 +172,7 @@ func main() {
 				notifications.DELETE("/:id", notificationHandler.DeleteNotification)
 				notifications.DELETE("", notificationHandler.DeleteAllNotification)
 				notifications.DELETE("/bulk", notificationHandler.DeleteSelectedBulkNotification)
-			
+
 			}
 
 			bookings := protected.Group("/bookings")
