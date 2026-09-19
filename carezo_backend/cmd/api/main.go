@@ -177,7 +177,7 @@ func main() {
 
 			bookings := protected.Group("/bookings")
 			{
-				bookings.POST("", bookingHandler.CreateBooking)
+				bookings.POST("", middleware.IdempotencyMiddleware(), bookingHandler.CreateBooking)
 				bookings.GET("", bookingHandler.ListUserBooking)
 				bookings.GET("/:id", bookingHandler.GetBooking)
 				bookings.PUT("/:id", bookingHandler.UpdateBooking)
