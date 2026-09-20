@@ -14,6 +14,7 @@ import (
 	"github.com/delaquash/carezo/internal/handlers"
 	"github.com/delaquash/carezo/internal/middleware"
 	"github.com/delaquash/carezo/internal/services"
+	"github.com/delaquash/carezo/internal/jobs"
 	"github.com/gin-gonic/gin"
 )
 
@@ -42,7 +43,7 @@ func main() {
 		log.Fatalf("Failed to connect to redis: %v", err)
 	}
 	defer database.CloseRedis()
-
+	jobs.StartCleanUpJobs()
 	// cloudinary
 	cloudinaryService, err := services.NewCloudinaryService(cfg)
 	if err != nil {
@@ -251,7 +252,6 @@ func main() {
 
 	go func() {
 		log.Printf("Server listening on port %s", cfg.AppPort)
-
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Failed to start server: %v", err)
 		}
