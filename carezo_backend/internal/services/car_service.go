@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -414,6 +415,29 @@ func (s *CarService) GetAvailableCars(pickupDate, returnDate time.Time) ([]*mode
 }
 
 func (s *CarService) GetNearbyCars(city string, page int, perPage int) ([]*models.Car, int, error) {
+	ctx := context.Background()
+	// every page to be cached needs a separate key,
+	// so that they wont return same data for for different screen
+	// this will happen if they share same cache key
+	cacheKey := fmt.Sprintf("nearby_cars:%s:page:%d:perpage:%d", strings.ToLower(city), page, perPage)
+
+	// cache-aside will read redis to see if key exist,
+	// if it exist in redis, uses it or else hit postgres
+
+	cached, err := database.RedisClient.Get(ctx, cacheKey).Result()
+	if err == nil {
+		var result struct {
+			Cars  []*models.Car `json:"cars"`
+			Total int           `json:"total"`
+		}
+
+		// if unmarshal fails for any reason, fall thru and re-fetch from Postgres
+		// rather than throwing an error
+		if json.Unmarshal([]byte(cached), &result) == nil {
+			return result.Cars, result.Total, nil
+		}
+	}
+
 	if page < 1 {
 		page = 0
 	}
@@ -431,7 +455,7 @@ func (s *CarService) GetNearbyCars(city string, page int, perPage int) ([]*model
 	var total int
 
 	// execute sql query and store result in total
-	err := database.DB.Get(&total, `
+	err = database.DB.Get(&total, `
 		SELECT COUNT(*) FROM cars
 		WHERE LOWER(current_location) ILIKE LOWER($1)
 			AND is_available = true
@@ -459,11 +483,43 @@ func (s *CarService) GetNearbyCars(city string, page int, perPage int) ([]*model
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to fetch nearby cars: %w", err)
 	}
+		// cache-aside write this result to redis before returning,
+	// so that the next request within 10min will return cache
+	// but after 10min, a new data is returned
+	cacheData, _ := json.Marshal(struct {
+		Cars  []*models.Car `json:"cars"`
+		Total int           `json:"total"`
+	}{Cars: cars, Total: total})
+	database.RedisClient.Set(ctx, cacheKey, cacheData, 5*time.Minute)
 	// return matching cars, total number found and no error
 	return cars, total, nil
 }
 
 func (s *CarService) GetPopularCars(page, perPage int) ([]*models.Car, int, error) {
+	ctx := context.Background()
+
+	// every page to be cached needs a separate key,
+	// so that they wont return same data for for different screen
+	// this will happen if they share same cache key
+	cacheKey := fmt.Sprintf("popular_cars:page:%d:perpage:%d", page, perPage)
+
+	// cache-aside will read redis to see if key exist,
+	// if it exist in redis, uses it or else hit postgres
+
+	cached, err := database.RedisClient.Get(ctx, cacheKey).Result()
+	if err == nil {
+		var result struct {
+			Cars  []*models.Car `json:"cars"`
+			Total int           `json:"total"`
+		}
+		// if unmarshal fails for any reason, fall thru and re-fetch from Postgres
+		// rather than throwing an error
+		if json.Unmarshal([]byte(cached), &result) == nil {
+			return result.Cars, result.Total, nil
+		}
+
+	}
+
 	if page < 1 {
 		page = 1
 	}
@@ -484,7 +540,7 @@ func (s *CarService) GetPopularCars(page, perPage int) ([]*models.Car, int, erro
 	var total int
 
 	// run sql and store result in total
-	err := database.DB.Get(&total, `
+	err = database.DB.Get(&total, `
 		SELECT COUNT(*) FROM cars 
 			WHERE is_available = true
 			AND deleted_at IS NULL
@@ -519,6 +575,15 @@ func (s *CarService) GetPopularCars(page, perPage int) ([]*models.Car, int, erro
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to fetch popular cars: %w", err)
 	}
+	// cache-aside write this result to redis before returning,
+	// so that the next request within 10min will return cache
+	// but after 10min, a new data is returned
+	cacheData, _ := json.Marshal(struct {
+		Cars  []*models.Car `json:"cars"`
+		Total int           `json:"total"`
+	}{Cars: cars, Total: total})
+	database.RedisClient.Set(ctx, cacheKey, cacheData, 10*time.Minute)
+
 	// return popular cars, the total and no error
 	return cars, total, nil
 }
