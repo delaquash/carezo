@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"time"
-	"uuid"
 
 	"github.com/delaquash/carezo/internal/database"
 	models "github.com/delaquash/carezo/internal/model"
