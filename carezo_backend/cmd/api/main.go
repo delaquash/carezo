@@ -44,6 +44,7 @@ func main() {
 	}
 	defer database.CloseRedis()
 	jobs.StartCleanUpJobs()
+	
 	// cloudinary
 	cloudinaryService, err := services.NewCloudinaryService(cfg)
 	if err != nil {

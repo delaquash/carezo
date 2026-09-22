@@ -20,6 +20,13 @@ func NewCarService() *CarService {
 	return &CarService{}
 }
 
+func buildSearchCacheKey(req *models.SearchCarsRequest) string {
+	return fmt.Sprintf("cars_search:%v:%v:%v:%v:%v:%v:%v:%v:%v:%v:%v:%d:%d",
+		req.Model, req.MinYear, req.MaxYear, req.Color,
+		req.Transmission, req.FuelType, req.MinSeats, req.MaxSeats,
+		req.Location, req.IsAvailable, req.SortBy, req.Page, req.PerPage,
+	)
+}
 // Create car by Admin
 func (s *CarService) CreateCar(req *models.CreateCarRequest) (*models.Car, error) {
 	var exists bool
@@ -80,17 +87,30 @@ func (s *CarService) CreateCar(req *models.CreateCarRequest) (*models.Car, error
 
 // get a single car by ID
 func (s *CarService) GetCarByID(carID string) (*models.Car, error) {
+	ctx := context.Background()
+	cacheKey := "car:" + carID
+
+	cached, err := database.RedisClient.Get(ctx, cacheKey).Result()
+	if err == nil {
+		var car models.Car
+		if json.Unmarshal([]byte(cached), &car) == nil {
+			return &car, nil
+		}
+	}
+
 	var car models.Car
-
 	query := `SELECT * FROM cars WHERE id = $1 and deleted_at IS NULL`
-	err := database.DB.Get(&car, query, carID)
-
+	err = database.DB.Get(&car, query, carID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("Car not found!!!")
 		}
 		return nil, fmt.Errorf("Database error: %w", err)
 	}
+
+	carJSON, _ := json.Marshal(car)
+	database.RedisClient.Set(ctx, cacheKey, carJSON, 5*time.Minute)
+
 	return &car, nil
 }
 
@@ -213,11 +233,12 @@ func (s *CarService) UpdateCar(carID string, req *models.UpdateCarRequest) (*mod
 		`, strings.Join(updates, ", "), argCount)
 	var car models.Car
 	err = database.DB.Get(&car, query, args...)
-
 	if err != nil {
 		return nil, fmt.Errorf("Failed to update car: %w", err)
 	}
+	database.RedisClient.Del(context.Background(), "car:"+carID)
 	return &car, nil
+
 }
 
 // Delete car by ID (soft delete)
@@ -233,11 +254,13 @@ func (s *CarService) DeleteCar(carID string) error {
 	// soft delete car
 	query := `UPDATE cars SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL`
 
+	// DeleteCar
 	result, err := database.DB.Exec(query, carID)
-
 	if err != nil {
 		return fmt.Errorf("Failed to delete car: %w", err)
 	}
+	database.RedisClient.Del(context.Background(), "car:"+carID)
+
 	rows, _ := result.RowsAffected()
 
 	if rows == 0 {
@@ -250,6 +273,17 @@ func (s *CarService) DeleteCar(carID string) error {
 // Search for cars and filter by pagination
 func (s *CarService) SearchCars(req *models.SearchCarsRequest) (*models.CarListResponse, error) {
 	// build WHERE clause dynamically based on filters
+
+	ctx := context.Background()
+	cacheKey := buildSearchCacheKey(req) // ← used right here, first line of the real function
+
+	cached, err := database.RedisClient.Get(ctx, cacheKey).Result()
+	if err == nil {
+		var result models.CarListResponse
+		if json.Unmarshal([]byte(cached), &result) == nil {
+			return &result, nil
+		}
+	}
 
 	var conditions []string
 	var args []interface{}
@@ -483,7 +517,7 @@ func (s *CarService) GetNearbyCars(city string, page int, perPage int) ([]*model
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to fetch nearby cars: %w", err)
 	}
-		// cache-aside write this result to redis before returning,
+	// cache-aside write this result to redis before returning,
 	// so that the next request within 10min will return cache
 	// but after 10min, a new data is returned
 	cacheData, _ := json.Marshal(struct {
