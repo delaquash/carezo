@@ -27,6 +27,7 @@ func buildSearchCacheKey(req *models.SearchCarsRequest) string {
 		req.Location, req.IsAvailable, req.SortBy, req.Page, req.PerPage,
 	)
 }
+
 // Create car by Admin
 func (s *CarService) CreateCar(req *models.CreateCarRequest) (*models.Car, error) {
 	var exists bool
@@ -275,7 +276,7 @@ func (s *CarService) SearchCars(req *models.SearchCarsRequest) (*models.CarListR
 	// build WHERE clause dynamically based on filters
 
 	ctx := context.Background()
-	cacheKey := buildSearchCacheKey(req) // ← used right here, first line of the real function
+	cacheKey := buildSearchCacheKey(req)
 
 	cached, err := database.RedisClient.Get(ctx, cacheKey).Result()
 	if err == nil {
@@ -349,7 +350,7 @@ func (s *CarService) SearchCars(req *models.SearchCarsRequest) (*models.CarListR
 	whereClause := strings.Join(conditions, " AND ")
 	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM cars WHERE %s", whereClause)
 	var total int
-	err := database.DB.Get(&total, countQuery, args...)
+	err = database.DB.Get(&total, countQuery, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to count cars: %w", err)
 	}
@@ -403,7 +404,7 @@ func (s *CarService) SearchCars(req *models.SearchCarsRequest) (*models.CarListR
 	totalPages := (total + perPage - 1) / perPage
 
 	// response
-	return &models.CarListResponse{
+	response := &models.CarListResponse{
 		Cars: cars,
 		Pagination: models.PaginationMeta{
 			Page:       page,
@@ -418,7 +419,10 @@ func (s *CarService) SearchCars(req *models.SearchCarsRequest) (*models.CarListR
 			"fuel_type":    req.FuelType,
 			"is_available": req.IsAvailable,
 		},
-	}, nil
+	}
+	responseJSON, _ := json.Marshal(response)
+	database.RedisClient.Set(ctx, cacheKey, responseJSON, 10*time.Minute)
+	return response, nil
 }
 
 // Get available cars for given date range
