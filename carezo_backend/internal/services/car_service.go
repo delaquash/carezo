@@ -571,7 +571,7 @@ func (s *CarService) GetPopularCars(page, perPage int) ([]*models.Car, int, erro
 	// offset = (3 - 1) * 10
 	// offset = 20
 	// Skip first 20 rows
-	// Start from row 21
+	// Start from row 21 simple
 	offset := (page - 1) * perPage
 
 	// variable to hold total count
