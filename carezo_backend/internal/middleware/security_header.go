@@ -2,8 +2,6 @@ package middleware
 
 import "github.com/gin-gonic/gin"
 
-
-
 func SecurityHeaders() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		h := c.Writer.Header()
