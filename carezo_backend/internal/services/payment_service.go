@@ -78,7 +78,7 @@ func (s *PaymentService) InitializePayment(bookingID string, userEmail string) (
 	}
 
 	// check if payment already exist
-	if booking.PaymentStatus == models.PaymentStatusCompleted {
+	if booking.PaymentStatus == models.PaymentStatusPaid {
 		return nil, errors.New("Payment already completed for this booking")
 	}
 
