@@ -14,7 +14,6 @@ const (
 	BookingStatusActive    = "active"
 
 	PaymentStatusPending   = "pending"
-	PaymentStatusCompleted = "completed"
 	PaymentStatusFailed    = "failed"
 	PaymentStatusRefunded  = "refunded"
 	PaymentStatusPaid      = "paid"
