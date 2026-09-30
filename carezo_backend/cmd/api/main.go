@@ -6,16 +6,20 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"reflect"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/delaquash/carezo/configs"
 	"github.com/delaquash/carezo/internal/database"
 	"github.com/delaquash/carezo/internal/handlers"
+	"github.com/delaquash/carezo/internal/jobs"
 	"github.com/delaquash/carezo/internal/middleware"
 	"github.com/delaquash/carezo/internal/services"
-	"github.com/delaquash/carezo/internal/jobs"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
 )
 
 func main() {
@@ -44,7 +48,7 @@ func main() {
 	}
 	defer database.CloseRedis()
 	jobs.StartCleanUpJobs()
-	
+
 	// cloudinary
 	cloudinaryService, err := services.NewCloudinaryService(cfg)
 	if err != nil {
@@ -56,6 +60,17 @@ func main() {
 	// Set gin mode
 	if cfg.AppEnv == "production" {
 		gin.SetMode(gin.ReleaseMode)
+	}
+
+	//  
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterTagNameFunc(func(fld reflect.StructField) string {
+			name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+			if name == "-" {
+				return ""
+			}
+			return name
+		})
 	}
 
 	// gin router
