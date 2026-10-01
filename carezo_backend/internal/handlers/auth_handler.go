@@ -28,7 +28,7 @@ func NewAuthHandler(cfg *configs.Config) *AuthHandler {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req models.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 
@@ -46,7 +46,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 	var req models.VerifyOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 
@@ -67,7 +67,7 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 
@@ -85,7 +85,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	var req models.ForgotPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 
@@ -104,7 +104,7 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 func (h *AuthHandler) ResendOTP(c *gin.Context) {
 	var req models.ResendOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 	err := h.authService.ResendOTP(&req)
@@ -120,7 +120,7 @@ func (h *AuthHandler) ResendOTP(c *gin.Context) {
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	var req models.ResetPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 
@@ -136,7 +136,7 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 func (h *AuthHandler) GoogleSignIn(c *gin.Context) {
 	var req models.GoogleSignInRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 
@@ -145,5 +145,5 @@ func (h *AuthHandler) GoogleSignIn(c *gin.Context) {
 		response.Error(c, http.StatusUnauthorized, err.Error())
 		return
 	}
-		response.Success(c, http.StatusOK, "Google sign-in successful", authResponse)
+	response.Success(c, http.StatusOK, "Google sign-in successful", authResponse)
 }

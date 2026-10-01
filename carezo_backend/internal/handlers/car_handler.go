@@ -34,7 +34,7 @@ func (h *CarHandler) CreateCar(c *gin.Context) {
 
 	// read the request body and fills req - fails if JSON is malformed
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error()) //400 + reason
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 
@@ -81,7 +81,7 @@ func (h *CarHandler) UpdateCar(c *gin.Context) {
 
 	var req models.UpdateCarRequest //hold whatever field
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 	// same parallel-array safety check as CreateCar, but for NEW images only

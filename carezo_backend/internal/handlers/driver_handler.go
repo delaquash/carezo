@@ -33,7 +33,7 @@ func NewDriverHandler(cfg *configs.Config, cloudinaryServices services.Cloudinar
 func (h *DriverHandler) RegisterDriver(c *gin.Context) {
 	var reg models.DriverRegisterRequest
 	if err := c.ShouldBindJSON(&reg); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 
@@ -71,7 +71,7 @@ func (h *DriverHandler) UpdateDriver(c *gin.Context) {
 	var req models.UpdateDriverRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 
@@ -255,7 +255,7 @@ func (h *DriverHandler) CreateReview(c *gin.Context) {
 
 	var req models.CreateReviewRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 
@@ -278,7 +278,7 @@ func (h *DriverHandler) ReviewDriverApplication(c *gin.Context) {
 
 	var req models.DriverReviewRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 
@@ -310,7 +310,7 @@ func (h *DriverHandler) SubmitBankDetails(c *gin.Context) {
 
 	var req models.DriverBankDetailsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 
@@ -338,7 +338,7 @@ func (h *DriverHandler) CompleteDriverProfile(c *gin.Context) {
 
 	var req models.CompleteDriverProfileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 

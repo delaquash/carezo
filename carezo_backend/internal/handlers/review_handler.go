@@ -81,7 +81,7 @@ func (h *ReviewHandler) UpdateReview(c *gin.Context) {
 
 	var req models.UpdateReviewRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 

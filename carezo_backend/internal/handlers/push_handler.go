@@ -26,7 +26,7 @@ func (h *PushHandler) RegisterToken(c *gin.Context) {
 
 	var req models.RegisterPushTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request data: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 
