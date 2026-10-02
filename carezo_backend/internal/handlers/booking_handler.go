@@ -33,7 +33,7 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 	fmt.Printf("DEBUG: attempting booking for user_id: %s\n", userID.(string))
 	var req models.CreateBookingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid Request: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 
@@ -71,7 +71,7 @@ func (h *BookingHandler) UpdateBooking(c *gin.Context) {
 	var req models.UpdateBookingRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "invalid request: "+err.Error())
+		response.Error(c, http.StatusBadRequest, response.FormatValidationError(err))
 		return
 	}
 
