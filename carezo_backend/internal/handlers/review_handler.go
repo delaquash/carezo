@@ -118,6 +118,3 @@ func (h *ReviewHandler) GetCarReviews(c *gin.Context) {
 	})
 }
 
-// EditReviewImage — assumed to already exist correctly on this handler
-// per your earlier route logs; not rewritten here since I haven't seen
-// it and it wasn't flagged as broken.
