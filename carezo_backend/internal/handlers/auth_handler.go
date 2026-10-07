@@ -133,6 +133,9 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Password reset successful. You can now login with your new password.", nil)
 }
 
+// POST /api/auth/google-login
+// Body: {"token": "GoogleOAuthToken"}
+
 func (h *AuthHandler) GoogleSignIn(c *gin.Context) {
 	var req models.GoogleSignInRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

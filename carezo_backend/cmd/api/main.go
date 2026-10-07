@@ -113,6 +113,7 @@ func main() {
 			auth.POST("/verify-otp", authHandler.VerifyOTP)
 			auth.POST("/resend-otp", authHandler.ResendOTP)
 			auth.POST("/login", authHandler.Login)
+			auth.POST("/google-login", authHandler.GoogleSignIn)
 			auth.POST("/forgot-password", authHandler.ForgotPassword)
 			auth.POST("/reset-password", authHandler.ResetPassword)
 		}
