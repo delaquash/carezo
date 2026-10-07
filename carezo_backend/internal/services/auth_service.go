@@ -346,7 +346,7 @@ func (s *AuthService) GoogleSignIn(req *models.GoogleSignInRequest) (*models.Aut
 
 	payload, err := idtoken.Validate(ctx, req.IDToken, s.cfg.GoogleClientID)
 	if err != nil {
-		return nil, fmt.Errorf("ivalid google token: %w", err)
+		return nil, fmt.Errorf("invalid google token: %w", err)
 	}
 
 	email, _ := payload.Claims["email"].(string)
