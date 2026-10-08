@@ -20,6 +20,8 @@ func FormatValidationError(err error) string {
 	return "Invalid request data: " + err.Error()
 }
 
+
+// formatFieldError formats a single field error into a human-readable message.
 func formatFieldError(fe validator.FieldError) string {
 	field := fe.Field()
 	switch fe.Tag() {
